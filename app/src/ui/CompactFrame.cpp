@@ -1,6 +1,7 @@
 #include "ui/CompactFrame.h"
 
 #include "app/AppController.h"
+#include "input/KeyboardController.h"
 
 #include <wx/button.h>
 #include <wx/checkbox.h>
@@ -57,9 +58,9 @@ CompactFrame::CompactFrame(AppController& controller, std::function<void()> on_f
     SetFont(font);
     SetBackgroundColour(*wxWHITE);
     auto* scroll = new wxScrolledWindow(this, wxID_ANY, wxDefaultPosition, wxDefaultSize,
-                                         wxHSCROLL | wxVSCROLL | wxTAB_TRAVERSAL);
+                                         wxVSCROLL | wxTAB_TRAVERSAL);
     scroll->SetBackgroundColour(*wxWHITE);
-    scroll->SetScrollRate(FromDIP(10), FromDIP(10));
+    scroll->SetScrollRate(0, FromDIP(10));
     auto* content = new wxBoxSizer(wxVERTICAL);
     auto* brand = new wxStaticText(scroll, wxID_ANY, "Tolkeyen Patagonia Turismo");
     brand->SetFont(font.Bold().Larger());
@@ -90,12 +91,16 @@ CompactFrame::CompactFrame(AppController& controller, std::function<void()> on_f
     content->Add(feedback_, 0, wxEXPAND | wxTOP | wxBOTTOM, FromDIP(3));
 
     auto* actions = new wxBoxSizer(wxHORIZONTAL);
-    pause_ = new wxButton(scroll, wxID_ANY, "Pausar");
-    stop_ = new wxButton(scroll, wxID_ANY, "Detener");
+    pause_ = new wxButton(scroll, wxID_ANY, "ENTER | Pausar");
+    stop_ = new wxButton(scroll, wxID_ANY, "0 | Detener");
+    stop_->SetBackgroundColour(wxColour(158, 43, 40));
+    stop_->SetForegroundColour(*wxWHITE);
+    pause_->SetFont(font.Bold());
+    stop_->SetFont(font.Bold());
     auto* full = new wxButton(scroll, wxID_ANY, "Vista completa");
     for (auto* button : {pause_, stop_, full}) {
-        button->SetMinSize(FromDIP(wxSize(-1, 44)));
-        actions->Add(button, button == full ? 2 : 1, wxRIGHT, FromDIP(6));
+        button->SetMinSize(FromDIP(wxSize(0, 52)));
+        actions->Add(button, 1, wxRIGHT, FromDIP(6));
     }
     content->Add(actions, 0, wxEXPAND | wxBOTTOM, FromDIP(4));
     on_top_ = new wxCheckBox(scroll, wxID_ANY, "Siempre visible (encima de otras ventanas)");
@@ -178,8 +183,8 @@ void CompactFrame::restore_position() {
             work = area;
         }
     }
-    const auto desired = FromDIP(wxSize(480, 420));
-    const auto minimum = FromDIP(wxSize(390, 330));
+    const auto desired = FromDIP(wxSize(560, 440));
+    const auto minimum = FromDIP(wxSize(510, 380));
     const wxSize size(std::min(desired.x, std::max(1, work.width)),
                       std::min(desired.y, std::max(1, work.height)));
     SetMinSize(wxSize(std::min(minimum.x, size.x), std::min(minimum.y, size.y)));
@@ -243,8 +248,12 @@ void CompactFrame::refresh_state() {
     set_label(playing_detail_, utf8(controller_.playback_detail()));
     set_label(status_, utf8(controller_.status_text()));
     const auto& state = controller_.state();
-    const wxString pause_label = state.status == PlaybackStatus::paused ? "Reanudar" : "Pausar";
+    const auto& keyboard = controller_.config().preferences.keyboard;
+    const wxString pause_label = (keyboard.enter_pauses ? "ENTER | " : "") +
+        wxString(state.status == PlaybackStatus::paused ? "Reanudar" : "Pausar");
     if (pause_->GetLabel() != pause_label) pause_->SetLabel(pause_label);
+    const auto stop_label = utf8(std::to_string(keyboard.stop_key) + " | Detener");
+    if (stop_->GetLabel() != stop_label) stop_->SetLabel(stop_label);
     const bool pausable = state.status == PlaybackStatus::playing || state.status == PlaybackStatus::paused;
     if (pause_->IsEnabled() != pausable) pause_->Enable(pausable);
     const bool on_top = controller_.config().preferences.always_on_top;
@@ -257,9 +266,10 @@ void CompactFrame::refresh_state() {
         }
     }
     if (feedback_->GetValue() != utf8(feedback)) feedback_->ChangeValue(utf8(feedback));
-    set_label(focus_notice_, IsActive()
-        ? "Teclado: mantenga esta ventana en foco."
-        : "Sin foco: vuelva a la ventana para usar el teclado.");
+    set_label(focus_notice_, !IsActive() ? "SIN FOCO | Active esta ventana para usar el numpad"
+        : KeyboardController::editing_focus() ? "ATAJOS SUSPENDIDOS | Termine de editar"
+        : !wxGetKeyState(WXK_NUMLOCK) ? "BLOQ NUM APAGADO | Active las teclas numericas"
+        : "NUMPAD LISTO | Teclas del recorrido seleccionado");
 }
 
 } // namespace audioguia

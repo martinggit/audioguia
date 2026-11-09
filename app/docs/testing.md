@@ -24,6 +24,20 @@ Se ejecuto una copia con solo el ejecutable y configuracion, desde un directorio
 
 ## Revision Visual
 
+### Botonera de operacion (2026-11-09)
+
+Se recompilo la interfaz Windows x86 y pasaron las cuatro suites CTest. La nueva ventana muestra un solo grupo UP/DOWN en dos columnas, teclas grandes segun la asignacion configurada, estado del punto activo y transporte fijo. Se revisaron capturas de la ventana completa, a 1024 x 740, de la compacta pausada y del editor de idiomas. Los ocho puntos UP y los seis DOWN caben en las dimensiones ensayadas; ventanas mas pequenas pueden requerir desplazamiento en la botonera.
+
+El smoke test actualizado termino con 57 comprobaciones aprobadas en una copia aislada con raiz Unicode y WAV sinteticos sobre WASAPI. Incluye cambio de grupo, limites y ausencia de solapamiento de botones, los tres modos, dialogos, pausa/reanudacion, Enter del numpad y su repeticion, aviso de edicion, recuperacion de foco con Usar numpad y finalizacion sin activar la app sobre una ventana externa. Se ajusto la invocacion automatizada de botones a BM_CLICK asincrono para no bloquear los dialogos modales; se conservan comprobaciones especificas de mensajes de mouse.
+
+Bloq Num estaba apagado: el bloque de digitos del numpad se omitio y no se modifico su estado global. La traduccion de teclas paso en la suite keyboard; las teclas fisicas, otros monitores y escalas DPI siguen requiriendo validacion en el equipo del operador. Evidencia local: `app/build/ui-smoke/evidence-unicode/` (desde la raiz del repositorio).
+
+### Editor de secuencia con arrastre (2026-11-09)
+
+Se reemplazo el selector desplegable por una lista nativa de tres filas con casillas, posiciones y estado de inclusion. Las cuatro suites CTest pasaron. El smoke test sobre una copia con raiz Unicode termino con 76 comprobaciones aprobadas: incluye Subir/Bajar, arrastre con mouse en ambas direcciones (incluido ultimo a primero), activacion y exclusion, persistencia del orden, permanencia de las tres filas y rechazo de desmarcar el ultimo idioma. Se revisaron las capturas `sequence-editor.png` y `sequence-three-languages.png` en `app/build/ui-smoke/evidence-unicode/`. El bloque de digitos del numpad se omitio por Bloq Num apagado, como en la verificacion anterior.
+
+### Capturas iniciales
+
 Se abrieron la referencia temporal original y capturas de la aplicacion real. Se corrigio la distribucion inicial para mostrar los ocho puntos UP y los seis DOWN en la vista principal de prueba, manteniendo numeracion celeste, superficies claras, nombres legibles e identidad textual. El editor personalizado ocupa el espacio libre bajo DOWN. No se invento un logo ni se usa la imagen como interfaz.
 
 La aplicacion usa controles Windows reales, no una replica pixel por pixel del dibujo. Las vistas completa, compacta pausada, preferencias y error se compararon visualmente. Las capturas, dimensiones y hashes se conservan localmente en `screenshots/` y `visual-verification.json`; los resultados del smoke test estan en `test-results/`. Son evidencia generada, excluida de Git para no publicar rutas y preferencias del equipo. Se pueden volver a generar con los scripts de prueba y record-verification. En pantallas mas pequenas se dispone de desplazamiento; deben verificarse los DPI y resoluciones concretos de las computadoras de a bordo.

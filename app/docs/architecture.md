@@ -7,7 +7,9 @@
 - `audio`: un worker posee contexto, dispositivo, decoder, ring buffer y secuencia. El callback consume PCM o silencio, sin I/O de archivos, bloqueos ni acceso a ventanas. Las lecturas y el avance se realizan en el worker.
 - `AppController`: una seleccion preparada, un snapshot activo y un identificador de sesion. Coordina configuracion, transporte y presentacion; se puede probar con IAudioPlayer falso.
 - `input`: convierte solo numpad fisico en comandos cuando esta app tiene foco. El event loop local intercepta antes de la navegacion nativa, distingue Enter extendido y repeticion. No registra Raw Input, hotkeys globales ni drivers.
-- `ui`: dos wxFrame sobre el mismo controlador. Un timer de 50 ms drena eventos y actualiza solo lo que cambio. El dialogo de preferencias modifica un borrador y no dispara audios durante la edicion.
+- `ui`: dos wxFrame sobre el mismo controlador. Un timer de 50 ms drena eventos y actualiza solo lo que cambio. La completa muestra una botonera de dos columnas para el grupo seleccionado, controles de transporte fijos arriba y preparacion abajo. Los botones nativos incluyen una insignia con la tecla configurada. El dialogo de preferencias modifica un borrador; el editor separado de idiomas personalizados guarda los cambios inmediatamente. Ambos suspenden los atajos durante la edicion.
+- La deteccion de foco de edicion se comparte entre KeyboardController y el aviso visual. Usar numpad recupera el foco de transporte sin enviar comandos de reproduccion. Cambiar grupo y cerrar dialogos tambien devuelve el foco; las actualizaciones de reproduccion no activan ventanas externas.
+- El editor personalizado usa wxListCtrl con casillas: idiomas activos numerados primero e inactivos visibles al final. El arrastre solo acepta filas activas del mismo editor y comparte la operacion de reordenar con Subir/Bajar. La reconstruccion de filas tras cambiar una casilla se difiere hasta terminar la notificacion nativa; la seleccion se conserva por idioma.
 
 ## Reproduccion
 

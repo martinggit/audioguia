@@ -39,10 +39,10 @@ Consultar `app/vendor-versions.json` para versiones, URLs y checksums de herrami
 | `app/src/audio/MiniaudioPlayer.*` | Worker de reproducción, decodificación, buffers, pausas y supervisión de salida. |
 | `app/src/config/ConfigRepository.*` | Lectura y validación JSON; persistencia con temporal, respaldo y recuperación. |
 | `app/src/input/KeyboardController.*` | Traducción del numpad y filtrado de mensajes locales según foco y edición. |
-| `app/src/ui/MainFrame.*` | Vista completa y botoneras. |
+| `app/src/ui/MainFrame.*` | Botonera de dos columnas del grupo seleccionado, transporte fijo, preparación y aviso de disponibilidad del numpad. |
 | `app/src/ui/CompactFrame.*` | Vista compacta del mismo reproductor. |
 | `app/src/ui/PreferencesDialog.*` | Edición de un borrador, asociaciones de archivos y selección de salida. |
-| `app/src/ui/SequenceEditor.*` | Selección y orden de idiomas personalizados. |
+| `app/src/ui/SequenceEditor.*` | Lista nativa con casillas, posiciones, arrastre local y Subir/Bajar; se abre desde Editar idiomas... y guarda los cambios inmediatamente. Los idiomas desmarcados permanecen visibles al final, sin posición. |
 | `app/tests/` | Suites C++ de dominio/configuración, controlador, teclado y audio. |
 | `app/scripts/` | Bootstrap, build, empaquetado y verificaciones. |
 | `app/config/audioguia.example.json` | Configuración de ejemplo versionada. |
@@ -69,6 +69,7 @@ Flujo principal: acción de UI o numpad → `AppController` → `PlaybackPlanner
 
 - Mantener `domain` independiente de wxWidgets y miniaudio.
 - Centralizar coordinación y estado compartido en `AppController`; las ventanas presentan estado y envían acciones.
+- Mostrar solo UP o DOWN en la botonera principal. Conservar botones nativos, números según el remapeo real y transporte visible al reducir la ventana. Compartir la detección de edición entre el teclado y su aviso visual; Usar numpad devuelve el foco sin iniciar ni detener audio.
 - Usar `IAudioPlayer` para desacoplar y probar el controlador con un reproductor falso.
 - El worker de audio es dueño del contexto, dispositivo, decoder, ring buffer y secuencia. El callback consume PCM o silencio, sin I/O de archivos, bloqueos ni acceso a ventanas.
 - Transferir eventos a la UI mediante la cola existente. Preservar generaciones del motor e IDs de sesión del controlador para descartar trabajo y eventos obsoletos.

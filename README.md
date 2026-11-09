@@ -70,7 +70,7 @@ El nombre es el mismo en las tres carpetas; cambia el idioma de la grabación.
 | DOWN | 5 | `0013.mp3` | Estancia Túnel |
 | DOWN | 6 | `0014.mp3` | Saint Christopher |
 
-UP y DOWN son los dos grupos de puntos del recorrido; no son controles de volumen. Los archivos `0015.mp3` y `0016.mp3` están reservados y no tienen un botón asignado.
+UP y DOWN son los dos grupos de puntos del recorrido; no son controles de volumen. Elegí el grupo con los botones grandes **UP / DOWN**: la botonera muestra solo sus puntos, en dos columnas. El número grande de cada botón indica qué tecla del numpad lo reproduce. Los archivos `0015.mp3` y `0016.mp3` están reservados y no tienen un botón asignado.
 
 **Si querés conservar otros nombres:** copiá los archivos dentro de `audio`, abrí **Configurar audios y salida**, elegí el punto y el idioma y usá **Buscar archivo** para asociar el MP3 correspondiente. Aplicá los cambios. La app usa esas asociaciones, no el orden en que aparecen los archivos en la carpeta.
 
@@ -84,6 +84,8 @@ UP y DOWN son los dos grupos de puntos del recorrido; no son controles de volume
 6. Usá **Pausar/Reanudar** para interrumpir momentáneamente y continuar desde la misma posición.
 7. Usá **Detener** para terminar la reproducción.
 
+Arriba siempre tenés el punto actual, su idioma y los botones **Enter · Pausar/Reanudar** y **0 · Detener**. El punto activo también se resalta en la botonera. Abajo, **PREPARAR SIGUIENTE** muestra la selección que se usará en el próximo disparo.
+
 Si querés probar portugués, seleccioná ese idioma y volvé a presionar Bienvenida. No necesitás cargar todos los puntos para hacer esta primera prueba.
 
 ## 4. Elegir cómo se reproducen los idiomas
@@ -92,11 +94,13 @@ Si querés probar portugués, seleccioná ese idioma y volvé a presionar Bienve
 | --- | --- | --- |
 | **Simple** | Reproduce el punto en un solo idioma. | Bienvenida en español. |
 | **Secuencial** | Reproduce el mismo punto en español, inglés y portugués, en ese orden. | Bienvenida en español → inglés → portugués. |
-| **Personalizado** | Reproduce solo los idiomas elegidos, en el orden que prepares con Subir/Bajar. | Bienvenida en portugués → español. |
+| **Personalizado** | Usá **Editar idiomas...**: marcá los idiomas y arrastrá las filas activas a la posición deseada, o seleccioná una fila y usá Subir/Bajar. Terminá con **Listo**. | Bienvenida en portugués → español. |
 
 **Si falta el archivo de un idioma, la app lo salta y sigue con el próximo disponible.** Por ejemplo, si tenés español y portugués pero todavía no inglés, Secuencial reproduce español → portugués. Si no encuentra ningún archivo para los idiomas seleccionados, muestra un error. Un archivo presente pero dañado o inaccesible también puede producir un error.
 
 Entre idiomas hay una pausa de un segundo por defecto. Podés cambiarla en **Configurar audios y salida**, entre 0 y 60 segundos.
+
+El editor personalizado muestra los tres idiomas juntos. Los incluidos tienen posiciones **1, 2, 3**; los desmarcados quedan al final, atenuados y sin número. Al marcar uno, se agrega al final de la secuencia activa y podés moverlo. Siempre debe quedar al menos uno seleccionado. Los cambios se guardan al hacerlos y se usan en el siguiente punto.
 
 Al terminar los idiomas de un punto, la app se detiene. Para escuchar otro punto, presioná su botón.
 
@@ -135,6 +139,10 @@ Con la ventana de Audioguía activa y Bloq Num encendido:
 
 Los atajos se suspenden al editar preferencias, selectores o volumen, y cuando estás usando otra aplicación. **Siempre visible no significa que los atajos funcionen en segundo plano.** Mantener una tecla presionada no dispara el audio repetidamente.
 
+Después de editar una opción o el volumen, presioná **Usar numpad**: devuelve el foco a la operación sin iniciar ni detener audio. La franja inferior indica **NUMPAD LISTO**, **ATAJOS SUSPENDIDOS**, **BLOQ NUM APAGADO** o **SIN FOCO**. Al cambiar UP/DOWN o cerrar un diálogo, el foco vuelve a los controles de operación.
+
+La ventana adapta su tamaño inicial al monitor. Podés maximizarla para tener botones más amplios; en ventanas pequeñas, la zona de puntos permite desplazamiento y los controles de pausa y detener permanecen visibles.
+
 ## 6. Si algo no funciona
 
 | Problema | Qué revisar |
@@ -145,7 +153,7 @@ Los atajos se suspenden al editar preferencias, selectores o volumen, y cuando e
 | No tengo audios en inglés. | Podés usar Secuencial: saltará los archivos ausentes. También podés seleccionar solo español y portugués en Personalizado. |
 | La app indica que reproduce, pero no escucho. | Revisá el volumen de la app, el de Windows, la salida seleccionada y la conexión de parlantes o auriculares. |
 | Un MP3 está presente, pero aparece un error. | Probalo en otro reproductor y verificá que sea un audio válido. Renombrar otro tipo de archivo a `.mp3` no lo convierte. |
-| El numpad no responde. | Activá la ventana de Audioguía, encendé Bloq Num y salí de los controles de edición. Probá el botón con el mouse. |
+| El numpad no responde. | Activá la ventana de Audioguía, encendé Bloq Num y pulsá **Usar numpad**. Revisá el aviso de la franja inferior. |
 | Aparece un aviso al guardar preferencias. | Usá una carpeta con permisos de escritura, como Documentos. Los cambios pueden seguir activos solo durante esa sesión. |
 | Aparece un aviso de configuración inválida. | Cerrá la app y revisá `app/config/audioguia.json`, o restaurá una copia válida de `audioguia.json.bak`. El archivo inválido no se sobrescribe automáticamente. |
 

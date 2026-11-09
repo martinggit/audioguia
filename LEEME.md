@@ -51,7 +51,8 @@ La app no determina el punto por el orden de los archivos: utiliza el mapa expli
 
 - **Simple:** un punto en el idioma seleccionado.
 - **Secuencial:** el mismo punto en espanol, ingles y portugues. Si falta el archivo de un idioma, lo salta y reproduce el siguiente disponible. No avanza por los demas puntos del recorrido.
-- **Personalizado:** seleccione los idiomas y use Subir/Bajar para ordenar. El orden completo aparece en PREPARAR SIGUIENTE y se guarda antes de disparar un punto.
+- **Personalizado:** pulse Editar idiomas..., marque los idiomas y arrastre sus filas activas para ordenar, o seleccione una fila y use Subir/Bajar. Los incluidos muestran posiciones 1, 2, 3; los desmarcados quedan visibles al final, atenuados y sin numero. Al activar un idioma se agrega al final de la secuencia. Debe quedar al menos uno marcado. Los cambios se guardan al hacerlos; pulse Listo para operar. El orden completo aparece en PREPARAR SIGUIENTE.
+- **Botonera:** seleccione UP o DOWN para mostrar solo sus puntos en dos columnas. Cada boton completo reproduce el punto; el numero grande indica la tecla del numpad asignada. El punto activo se resalta y su estado se muestra arriba, junto a Pausar/Reanudar y Detener.
 - **Pausa entre idiomas:** se configura en Configurar audios y salida; valor inicial 1 segundo, rango 0-60 segundos.
 - **Otro punto:** cancela lo anterior y valida la secuencia nueva antes de empezar. No hay mezcla de voces.
 - **Pausar/Reanudar:** conserva la posicion. Durante el intervalo entre idiomas conserva el tiempo restante.
@@ -63,7 +64,7 @@ La app no determina el punto por el orden de los archivos: utiliza el mapa expli
 ## Numpad
 
 1. Active Bloq Num usted mismo; la app nunca cambia su estado global.
-2. Haga clic en la ventana completa o compacta para activarla. Los atajos se suspenden si el foco esta en un selector o en volumen. Puede pulsar Detener con el mouse para cancelar y dejar el foco en un control de transporte, o pasar a la compacta antes de usar el numpad.
+2. Haga clic en la ventana completa o compacta para activarla. Los atajos se suspenden si el foco esta en un selector o en volumen. En la completa, pulse Usar numpad para volver a operar sin interrumpir el audio. La franja inferior indica si el numpad esta listo, suspendido por edicion, sin foco o con Bloq Num apagado.
 3. Numpad 1-8 dispara el punto de la direccion activa. En DOWN, 7 y 8 no hacen nada.
 4. Numpad 0 detiene y vacia la secuencia.
 5. Enter del numpad pausa/reanuda. El Enter principal no es ese atajo.

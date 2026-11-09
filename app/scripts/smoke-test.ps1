@@ -54,7 +54,31 @@ public static class AudioguiaSmoke {
     [StructLayout(LayoutKind.Sequential)] public struct Point { public int X,Y; }
     [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr handle, IntPtr dc, uint flags);
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr handle, out Rect rect);
+    [DllImport("user32.dll")] public static extern bool MoveWindow(IntPtr handle, int x, int y, int width, int height, bool repaint);
+    [DllImport("user32.dll")] public static extern bool RedrawWindow(IntPtr handle, IntPtr rect, IntPtr region, uint flags);
+    [DllImport("user32.dll")] public static extern bool ClientToScreen(IntPtr handle, ref Point point);
+    [DllImport("kernel32.dll")] static extern IntPtr OpenProcess(uint access, bool inherit, uint pid);
+    [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr handle);
+    [DllImport("kernel32.dll")] static extern IntPtr VirtualAllocEx(IntPtr process, IntPtr address, UIntPtr size, uint allocation, uint protection);
+    [DllImport("kernel32.dll")] static extern bool VirtualFreeEx(IntPtr process, IntPtr address, UIntPtr size, uint freeType);
+    [DllImport("kernel32.dll")] static extern bool WriteProcessMemory(IntPtr process, IntPtr address, byte[] data, UIntPtr size, out UIntPtr written);
+    [DllImport("kernel32.dll")] static extern bool ReadProcessMemory(IntPtr process, IntPtr address, byte[] data, UIntPtr size, out UIntPtr read);
     [StructLayout(LayoutKind.Sequential)] public struct Rect { public int Left,Top,Right,Bottom; }
+    // LVM_GETITEMRECT needs a RECT in the tested process, not a caller pointer.
+    public static Rect ItemRect(IntPtr list, int index) {
+        uint pid; GetWindowThreadProcessId(list,out pid);
+        IntPtr process=OpenProcess(0x38,false,pid);
+        if (process==IntPtr.Zero) throw new Exception("Cannot inspect test list geometry");
+        IntPtr memory=IntPtr.Zero;
+        try {
+            memory=VirtualAllocEx(process,IntPtr.Zero,(UIntPtr)16,0x3000,4);
+            byte[] bytes=new byte[16]; UIntPtr size;
+            if (memory==IntPtr.Zero || !WriteProcessMemory(process,memory,bytes,(UIntPtr)16,out size)) throw new Exception("Cannot prepare test RECT");
+            if (SendMessageW(list,0x100E,(IntPtr)index,memory)==IntPtr.Zero || !ReadProcessMemory(process,memory,bytes,(UIntPtr)16,out size)) throw new Exception("Cannot read test row rectangle");
+            Point origin=new Point(); ClientToScreen(list,ref origin);
+            return new Rect { Left=origin.X+BitConverter.ToInt32(bytes,0), Top=origin.Y+BitConverter.ToInt32(bytes,4), Right=origin.X+BitConverter.ToInt32(bytes,8), Bottom=origin.Y+BitConverter.ToInt32(bytes,12) };
+        } finally { if (memory!=IntPtr.Zero) VirtualFreeEx(process,memory,UIntPtr.Zero,0x8000); CloseHandle(process); }
+    }
     public static string Text(IntPtr handle) {
         var text = new StringBuilder(32768); GetWindowTextW(handle,text,text.Capacity); return text.ToString();
     }
@@ -119,7 +143,10 @@ function Find-Control([IntPtr]$Window, [string]$Text, [string]$Class = '') {
     $Root = [System.Windows.Automation.AutomationElement]::FromHandle($Window)
     foreach ($element in $Root.FindAll([System.Windows.Automation.TreeScope]::Descendants,[System.Windows.Automation.Condition]::TrueCondition)) {
         $handle = [IntPtr]$element.Current.NativeWindowHandle
-        if ($element.Current.Name -eq $Text -and (!$Class -or [AudioguiaSmoke]::Class($handle) -eq $Class)) { return $handle }
+        $Name = $element.Current.Name -replace '^(?:ENTER|\d+)\s*\|\s*',''
+        $Name = ($Name -replace '\s+',' ').Trim()
+        $Name = $Name -replace ' (REPRODUCIENDO|PAUSADO|VALIDANDO AUDIOS|PAUSA ENTRE IDIOMAS|ERROR)$',''
+        if ($Name -eq $Text -and [AudioguiaSmoke]::IsWindowVisible($handle) -and (!$Class -or [AudioguiaSmoke]::Class($handle) -eq $Class)) { return $handle }
     }
     throw "Control not found: $Text ($Class)"
 }
@@ -147,10 +174,14 @@ function Get-Compact {
 function Click([IntPtr]$Window, [string]$Text) {
     $handle = Find-Control $Window $Text 'Button'
     [void][AudioguiaSmoke]::SetForegroundWindow($Window)
-    [AudioguiaSmoke]::MouseClick($handle)
+    # Invoke the native button deterministically; dedicated checks below exercise
+    # mouse down/up and focus. Posted clicks can race owner-drawn repaint at EOF.
+    [void][AudioguiaSmoke]::PostMessageW($handle,0xF5,[IntPtr]::Zero,[IntPtr]::Zero)
     Start-Sleep -Milliseconds 120
 }
 function Capture([IntPtr]$Window, [string]$Name) {
+    [void][AudioguiaSmoke]::RedrawWindow($Window,[IntPtr]::Zero,[IntPtr]::Zero,0x185)
+    Start-Sleep -Milliseconds 150
     $PreviousDpi = [AudioguiaSmoke]::SetThreadDpiAwarenessContext([IntPtr](-4))
     try {
         $rect = New-Object AudioguiaSmoke+Rect
@@ -163,6 +194,69 @@ function Capture([IntPtr]$Window, [string]$Name) {
         try { $bitmap.Save("$Evidence/$Name.png",[Drawing.Imaging.ImageFormat]::Png) }
         finally { $bitmap.Dispose() }
     } finally { [void][AudioguiaSmoke]::SetThreadDpiAwarenessContext($PreviousDpi) }
+}
+
+function Check-PointLayout([string]$Direction) {
+    $Frame = New-Object AudioguiaSmoke+Rect
+    [void][AudioguiaSmoke]::GetWindowRect($Main,[ref]$Frame)
+    $ModeLabel = Find-Control $Main 'Modo' 'Static'
+    $Footer = New-Object AudioguiaSmoke+Rect
+    [void][AudioguiaSmoke]::GetWindowRect($ModeLabel,[ref]$Footer)
+    $Rects = @()
+    foreach ($point in $Config.points | Where-Object { $_.direction -eq $Direction }) {
+        $Button = Find-Control $Main $point.name 'Button'
+        $Rect = New-Object AudioguiaSmoke+Rect
+        [void][AudioguiaSmoke]::GetWindowRect($Button,[ref]$Rect)
+        Check ($Rect.Left -ge $Frame.Left -and $Rect.Right -le $Frame.Right -and $Rect.Bottom -le $Footer.Top -and ($Rect.Bottom-$Rect.Top) -ge 60) "Large $Direction point $($point.number) fits above the settings"
+        foreach ($Previous in $Rects) {
+            if ($Rect.Left -lt $Previous.Right -and $Rect.Right -gt $Previous.Left -and $Rect.Top -lt $Previous.Bottom -and $Rect.Bottom -gt $Previous.Top) {
+                throw 'Point buttons overlap'
+            }
+        }
+        $Rects += $Rect
+    }
+}
+
+function Sequence-Rows([IntPtr]$Window) {
+    $list = [AudioguiaSmoke]::Children($Window) | Where-Object { [AudioguiaSmoke]::Class($_) -eq 'SysListView32' } | Select-Object -First 1
+    if (!$list) { throw 'Sequence list not found' }
+    $count = [AudioguiaSmoke]::SendMessageW($list,0x1004,[IntPtr]::Zero,[IntPtr]::Zero).ToInt32()
+    for ($i=0; $i -lt $count; $i++) { [AudioguiaSmoke]::ItemRect($list,$i) }
+}
+function Check-Sequence([string]$Expected, [string]$Description) {
+    $deadline = [DateTime]::UtcNow.AddSeconds(3)
+    do {
+        $saved = [IO.File]::ReadAllText("$Fixture/app/config/audioguia.json") | ConvertFrom-Json
+        if (($saved.preferences.custom_languages -join ',') -eq $Expected) { Check $true $Description; return }
+        Start-Sleep -Milliseconds 60
+    } while ([DateTime]::UtcNow -lt $deadline)
+    Check $false $Description
+}
+function Sequence-Mouse([IntPtr]$Window, [int]$Source, [int]$Target = -1) {
+    $rows = Sequence-Rows $Window
+    Check ($rows.Count -eq 3) 'All three languages remain visible in the editor'
+    $from = $rows[$Source]
+    $cursor = New-Object AudioguiaSmoke+Point
+    [void][AudioguiaSmoke]::GetCursorPos([ref]$cursor)
+    [void][AudioguiaSmoke]::SetForegroundWindow($Window)
+    try {
+        $x = [int]($from.Left + $(if ($Target -lt 0) { 9 } else { 155 }))
+        $y = [int](($from.Top + $from.Bottom) / 2)
+        [void][AudioguiaSmoke]::SetCursorPos($x,$y)
+        [AudioguiaSmoke]::mouse_event(2,0,0,0,[UIntPtr]::Zero)
+        if ($Target -ge 0) {
+            Start-Sleep -Milliseconds 100
+            [void][AudioguiaSmoke]::SetCursorPos(($x+10),$y)
+            Start-Sleep -Milliseconds 150
+            $to = $rows[$Target]
+            [void][AudioguiaSmoke]::SetCursorPos($x,[int](($to.Top+$to.Bottom)/2))
+            Start-Sleep -Milliseconds 200
+        }
+    } finally {
+        [AudioguiaSmoke]::mouse_event(4,0,0,0,[UIntPtr]::Zero)
+        Start-Sleep -Milliseconds 200
+        [void][AudioguiaSmoke]::SetCursorPos($cursor.X,$cursor.Y)
+    }
 }
 
 $Process = $null
@@ -179,8 +273,23 @@ try {
     Check ($Main -ne [IntPtr]::Zero) 'Main window opens from a different working directory without development PATH'
     Capture $Main 'main-startup'
     Check (Wait-Text $Main 'DETENIDO') 'Startup is stopped without autoplay'
-    Check ((Window-Texts $Main) -contains 'Bienvenida') 'UP buttons exist'
-    Check ((Window-Texts $Main) -contains 'Saint Christopher') 'DOWN buttons exist'
+    Check ((Find-Control $Main 'Bienvenida' 'Button') -ne [IntPtr]::Zero) 'UP buttons exist'
+    Check-PointLayout 'up'
+    Click $Main 'DOWN | 6 puntos'
+    Check ((Find-Control $Main 'Saint Christopher' 'Button') -ne [IntPtr]::Zero) 'DOWN buttons exist after switching group'
+    Check-PointLayout 'down'
+    $HiddenUp = [AudioguiaSmoke]::Children($Main) | Where-Object { [AudioguiaSmoke]::Text($_) -eq 'Bienvenida' -and [AudioguiaSmoke]::IsWindowVisible($_) }
+    Check (!$HiddenUp) 'Only the selected group is visible'
+    Capture $Main 'main-down'
+    Click $Main 'UP | 8 puntos'
+    $Original = New-Object AudioguiaSmoke+Rect
+    [void][AudioguiaSmoke]::GetWindowRect($Main,[ref]$Original)
+    [void][AudioguiaSmoke]::MoveWindow($Main,$Original.Left,$Original.Top,1024,740,$true)
+    Start-Sleep -Milliseconds 300
+    Check-PointLayout 'up'
+    Capture $Main 'main-1024'
+    [void][AudioguiaSmoke]::MoveWindow($Main,$Original.Left,$Original.Top,($Original.Right-$Original.Left),($Original.Bottom-$Original.Top),$true)
+    Start-Sleep -Milliseconds 300
     Capture $Main 'main'
     Click $Main 'Vista compacta'
     $Compact = Get-Compact
@@ -228,10 +337,41 @@ try {
         $Texts = (Window-Texts $Main) -join "`n"
         Check ($Texts -match 'PORT > ESP') 'Custom subset and order appear in the pending selection'
         Click $Main 'Detener'
+        Click $Main 'Editar idiomas...'
+        Start-Sleep -Milliseconds 250
+        $SequenceDialog = [AudioguiaSmoke]::Windows($Process.Id) | Where-Object { [AudioguiaSmoke]::Text($_) -eq 'Preparar idiomas personalizados' } | Select-Object -First 1
+        Check ($null -ne $SequenceDialog) 'Custom sequence editor opens separately from the point grid'
+        Capture $SequenceDialog 'sequence-editor'
+        Click $SequenceDialog 'Bajar'
+        Check-Sequence 'es,pt' 'Bajar moves the selected language and persists its new position'
+        Click $SequenceDialog 'Subir'
+        Check-Sequence 'pt,es' 'Subir preserves selection and restores the original order'
+        Sequence-Mouse $SequenceDialog 0 1
+        Check-Sequence 'es,pt' 'Dragging downward reorders active languages'
+        Sequence-Mouse $SequenceDialog 2
+        Check-Sequence 'es,pt,en' 'Checking an inactive language appends it to the sequence'
+        Capture $SequenceDialog 'sequence-three-languages'
+        Sequence-Mouse $SequenceDialog 2 0
+        Check-Sequence 'en,es,pt' 'Dragging last to first shifts all intervening languages'
+        Sequence-Mouse $SequenceDialog 0
+        Check-Sequence 'es,pt' 'Unchecking a language excludes it from playback'
+        Sequence-Mouse $SequenceDialog 1
+        Check-Sequence 'es' 'A single selected language is supported'
+        Sequence-Mouse $SequenceDialog 0
+        Check-Sequence 'es' 'The final active language cannot be unchecked'
+        Check (Wait-Text $SequenceDialog 'Debe quedar al menos un idioma. Active otro antes de quitar el ultimo.') 'Last-language rejection explains how to continue'
+        Sequence-Mouse $SequenceDialog 2
+        Check-Sequence 'es,pt' 'An excluded language can be enabled again'
+        Sequence-Mouse $SequenceDialog 1 0
+        Check-Sequence 'pt,es' 'Dragging upward restores the custom subset'
+        Click $SequenceDialog 'Listo'
+        Start-Sleep -Milliseconds 200
+        Click $Main 'DOWN | 6 puntos'
         Click $Main 'Monte Cervantes'
         Check (Wait-Text $Main 'ERROR') 'Another point cancels and reports its missing files'
         Capture $Main 'missing-audio'
         Click $Main 'Detener'
+        Click $Main 'UP | 8 puntos'
         [AudioguiaSmoke]::Select($Mode,0)
         $Point = Find-Control $Main 'Bienvenida' 'Button'
         [void][AudioguiaSmoke]::SetForegroundWindow($Main)
@@ -242,6 +382,25 @@ try {
         Click $Main 'Detener'
         [AudioguiaSmoke]::Key($Point,0x0D,$true,$false)
         Check (Wait-Text $Main 'DETENIDO') 'Numpad Enter while stopped never starts audio'
+        [AudioguiaSmoke]::MouseClick($Point)
+        Check (Wait-Text $Main 'REPRODUCIENDO') 'Playback for Enter checks independent of Num Lock'
+        [AudioguiaSmoke]::Key($Point,0x0D,$true,$false)
+        Check (Wait-Text $Main 'PAUSADO') 'Numpad Enter pauses with either Num Lock state'
+        Capture $Main 'main-paused'
+        [AudioguiaSmoke]::Key($Point,0x0D,$true,$true)
+        Start-Sleep -Milliseconds 150
+        Check (Wait-Text $Main 'PAUSADO') 'Repeated Enter is ignored with either Num Lock state'
+        [AudioguiaSmoke]::Key($Point,0x0D,$true,$false)
+        Check (Wait-Text $Main 'REPRODUCIENDO') 'Numpad Enter resumes with either Num Lock state'
+        Click $Main 'Detener'
+        [AudioguiaSmoke]::MouseClick($Mode)
+        Start-Sleep -Milliseconds 100
+        [AudioguiaSmoke]::Key($Mode,0x1B,$false,$false)
+        Check (Wait-Text $Main 'ATAJOS SUSPENDIDOS | Termine de editar y pulse Usar numpad') 'Editing suspension is visible with either Num Lock state'
+        Click $Main 'Usar numpad'
+        $ReadyText = if (([AudioguiaSmoke]::GetKeyState(0x90) -band 1) -ne 0) { 'NUMPAD LISTO | El numero grande de cada boton es su tecla' } else { 'BLOQ NUM APAGADO | Activelo para usar las teclas numericas' }
+        Check (Wait-Text $Main $ReadyText) 'Ready button leaves editing and shows the actual Num Lock state'
+        Check (Wait-Text $Main 'DETENIDO') 'Ready button does not start audio'
         if (([AudioguiaSmoke]::GetKeyState(0x90) -band 1) -ne 0) {
             [AudioguiaSmoke]::Key($Point,0x61,$false,$false)
             Check (Wait-Text $Main 'REPRODUCIENDO') 'Focused numpad 1 starts the active-direction point'
@@ -260,6 +419,10 @@ try {
             [AudioguiaSmoke]::Key($Mode,0x62,$false,$false)
             Start-Sleep -Milliseconds 250
             Check ((Window-Texts $Main) -contains 'DETENIDO') 'Numpad does not fire while editing a selector'
+            Check (Wait-Text $Main 'ATAJOS SUSPENDIDOS | Termine de editar y pulse Usar numpad') 'Editing suspension is visible to the operator'
+            Click $Main 'Usar numpad'
+            Check (Wait-Text $Main 'NUMPAD LISTO | El numero grande de cada boton es su tecla') 'Ready button restores numpad without starting playback'
+            Check (Wait-Text $Main 'DETENIDO') 'Returning to numpad does not trigger audio'
             [AudioguiaSmoke]::MouseClick($Point)
             Check (Wait-Text $Main 'REPRODUCIENDO') 'Mouse returns focus from the selector to the point'
             Click $Main 'Detener'
@@ -322,10 +485,14 @@ try {
     throw
 } finally {
     if ($Process -and !$Process.HasExited) {
+        foreach ($window in [AudioguiaSmoke]::Windows($Process.Id)) {
+            if ($window -ne $Main) { [void][AudioguiaSmoke]::PostMessageW($window,0x10,[IntPtr]::Zero,[IntPtr]::Zero) }
+        }
+        Start-Sleep -Milliseconds 150
         if ($Main -ne [IntPtr]::Zero) {
             [void][AudioguiaSmoke]::PostMessageW($Main,0x10,[IntPtr]::Zero,[IntPtr]::Zero)
         } else { [void]$Process.CloseMainWindow() }
-        [void]$Process.WaitForExit(5000)
+        if (!$Process.WaitForExit(5000)) { $Process.Kill(); [void]$Process.WaitForExit(5000) }
     }
     [IO.File]::WriteAllLines("$Evidence/results.txt", $Results, (New-Object Text.UTF8Encoding($false)))
 }

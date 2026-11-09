@@ -38,6 +38,7 @@ public:
     KeyboardController(AppController& controller, MainFrame& main, CompactFrame& compact)
         : controller_(controller), main_(main), compact_(compact) {}
     bool handle_native_message(void* message);
+    static bool editing_focus();
 private:
     AppController& controller_;
     MainFrame& main_;

@@ -71,6 +71,7 @@ public:
                 if (compact_) compact_->refresh_state();
             }, timer_.GetId());
             main_->Show();
+            main_->focus_transport();
             timer_.Start(50);
             return true;
         } catch (const std::exception& error) {
@@ -98,6 +99,7 @@ private:
         main_->Show();
         compact_->Hide();
         main_->Raise();
+        main_->focus_transport();
     }
 
     std::unique_ptr<AppController> controller_;
