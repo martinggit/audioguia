@@ -72,6 +72,7 @@ Flujo principal: acción de UI o numpad → `AppController` → `PlaybackPlanner
 - Mostrar solo UP o DOWN en la botonera principal. Conservar botones nativos, números según el remapeo real y transporte visible al reducir la ventana. Compartir la detección de edición entre el teclado y su aviso visual; Usar numpad devuelve el foco sin iniciar ni detener audio.
 - Usar `IAudioPlayer` para desacoplar y probar el controlador con un reproductor falso.
 - El worker de audio es dueño del contexto, dispositivo, decoder, ring buffer y secuencia. El callback consume PCM o silencio, sin I/O de archivos, bloqueos ni acceso a ventanas.
+- El avance se obtiene del contador lock-free de PCM consumido y de la duración del decoder, no del reloj ni de la lectura anticipada. Los eventos de progreso se coalescen; respetar sesión, pista, pausa y duración desconocida. La barra del botón es informativa y no implementa seek.
 - Transferir eventos a la UI mediante la cola existente. Preservar generaciones del motor e IDs de sesión del controlador para descartar trabajo y eventos obsoletos.
 - Al cerrar, detener y hacer join del worker de reproducción. Evitar referencias a ventanas destruidas desde tareas asíncronas.
 - El backend null se habilita explícitamente para pruebas; nunca es fallback de producción.

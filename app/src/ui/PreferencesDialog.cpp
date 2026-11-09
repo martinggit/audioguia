@@ -299,6 +299,7 @@ PreferencesDialog::PreferencesDialog(AppController& controller, wxWindow* parent
     message_ = read_only(this, 52, true);
     message_->SetName("Resultado de aplicar la configuracion");
     bottom->Add(message_, 0, wxEXPAND | wxBOTTOM, FromDIP(8));
+    message_->Hide();
     auto* buttons = new wxBoxSizer(wxHORIZONTAL);
     buttons->AddStretchSpacer();
     auto* cancel = new wxButton(this, wxID_CANCEL, "Cancelar");
@@ -364,6 +365,10 @@ PreferencesDialog::~PreferencesDialog() {
 
 void PreferencesDialog::set_message(const wxString& message) {
     change_text(message_, message);
+    if (message_->IsShown() != !message.empty()) {
+        message_->Show(!message.empty());
+        Layout();
+    }
 }
 
 void PreferencesDialog::refresh_devices() {

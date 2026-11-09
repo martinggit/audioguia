@@ -17,6 +17,9 @@ struct AudioEvent {
     bool between_languages{false};
     std::string message;
     std::optional<std::size_t> next_track_index{};
+    std::uint64_t position_ms{0};
+    std::optional<std::uint64_t> duration_ms{};
+    bool progress_only{false};
 };
 
 class IAudioPlayer {

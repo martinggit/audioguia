@@ -146,6 +146,8 @@ function Find-Control([IntPtr]$Window, [string]$Text, [string]$Class = '') {
         $Name = $element.Current.Name -replace '^(?:ENTER|\d+)\s*\|\s*',''
         $Name = ($Name -replace '\s+',' ').Trim()
         $Name = $Name -replace ' (REPRODUCIENDO|PAUSADO|VALIDANDO AUDIOS|PAUSA ENTRE IDIOMAS|ERROR)$',''
+        $Name = $Name -replace ' (ESP|ENG|PORT) \| \d+:\d{2} / (\d+:\d{2}|--:--)$',''
+        $Name = $Name -replace ' Esperando proximo idioma$',''
         if ($Name -eq $Text -and [AudioguiaSmoke]::IsWindowVisible($handle) -and (!$Class -or [AudioguiaSmoke]::Class($handle) -eq $Class)) { return $handle }
     }
     throw "Control not found: $Text ($Class)"
@@ -306,7 +308,12 @@ try {
         $Dialog = [AudioguiaSmoke]::Windows($Process.Id) | Where-Object { [AudioguiaSmoke]::Text($_) -like 'Configurar*Tolkeyen' } | Select-Object -First 1
     } while (!$Dialog -and [DateTime]::UtcNow -lt $Deadline)
     Check ($null -ne $Dialog -and $Dialog -ne [IntPtr]::Zero) 'Preferences dialog opens'
+    $Notice = [AudioguiaSmoke]::Children($Dialog) | Where-Object { [AudioguiaSmoke]::Class($_) -eq 'Edit' -and [AudioguiaSmoke]::GetParent($_) -eq $Dialog } | Select-Object -First 1
+    Check ($Notice -and ![AudioguiaSmoke]::IsWindowVisible($Notice)) 'Empty preferences notice is hidden'
     Capture $Dialog 'preferences'
+    Click $Dialog ('Quitar asociaci' + [char]0x00F3 + 'n')
+    Check ([AudioguiaSmoke]::IsWindowVisible($Notice)) 'Preferences notice becomes visible when there is a message'
+    Capture $Dialog 'preferences-notice'
     Click $Dialog 'Cancelar'
     Click $Main 'Bienvenida'
     if ($NoAudio) {
@@ -315,8 +322,17 @@ try {
     } else {
         $Format = if ($Mp3Fixture) { 'MP3' } else { 'WAV' }
         Check (Wait-Text $Main 'REPRODUCIENDO') "Real WASAPI starts the generated TEST_ONLY $Format"
+        $ProgressPoint = Find-Control $Main 'Bienvenida' 'Button'
+        Start-Sleep -Milliseconds 650
+        if (!$Mp3Fixture) {
+            Check ([AudioguiaSmoke]::Text($ProgressPoint) -match 'ESP \| \d+:\d{2} / 00:02') 'Active point shows language, elapsed time and decoded WAV duration'
+        }
         Click $Main 'Pausar'
         Check (Wait-Text $Main 'PAUSADO') 'Pause updates the shared player'
+        $PausedProgress = [AudioguiaSmoke]::Text($ProgressPoint)
+        Start-Sleep -Milliseconds 250
+        Check ([AudioguiaSmoke]::Text($ProgressPoint) -eq $PausedProgress) 'Visible progress is frozen while paused'
+        Capture $Main 'point-progress-paused'
         Click $Main 'Vista compacta'
         $Compact = Get-Compact
         Check (Wait-Text $Compact 'PAUSADO') 'Compact view shares the paused point'
@@ -325,6 +341,7 @@ try {
         Check (Wait-Text $Compact 'REPRODUCIENDO') 'Resume from compact view'
         Click $Compact 'Detener'
         Check (Wait-Text $Compact 'DETENIDO') 'Stop clears the sequence from compact view'
+        Check ([AudioguiaSmoke]::Text($ProgressPoint) -notmatch '\d+:\d{2} /') 'Stop clears the point progress text'
         Click $Compact 'Vista completa'
         $Mode = Find-Control $Main 'Simple' 'ComboBox'
         [AudioguiaSmoke]::Select($Mode,1)

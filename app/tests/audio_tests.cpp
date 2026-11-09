@@ -213,10 +213,12 @@ struct RecordedEvent {
 
 class EventLog {
 public:
-    explicit EventLog(MiniaudioPlayer& player) : player_(player) {}
+    explicit EventLog(MiniaudioPlayer& player, bool record_progress = false)
+        : player_(player), record_progress_(record_progress) {}
 
     void pump() {
         for (auto& event : player_.poll_events()) {
+            if (event.progress_only && !record_progress_) continue;
             items.push_back({std::move(event), Clock::now()});
         }
     }
@@ -287,6 +289,7 @@ public:
 
 private:
     MiniaudioPlayer& player_;
+    bool record_progress_;
 };
 
 void creation_and_devices(const Fixtures&) {
@@ -343,6 +346,80 @@ void three_languages_and_indices(const Fixtures& fixture) {
     }
     log.no_error();
     check(player.poll_events().empty(), "poll_events must drain, not replay events");
+}
+
+void pcm_progress_pause_stop_and_replacement(const Fixtures& fixture) {
+    MiniaudioPlayer player(true);
+    EventLog log(player, true);
+    player.play(300, single(fixture.long_track), {}, 0.5F);
+    const auto progress = log.wait([](const AudioEvent& event) {
+        return event.progress_only && event.position_ms >= 100;
+    });
+    check(progress.event.duration_ms == 1800 && progress.event.position_ms < 500,
+          "Progress must describe consumed PCM, not decoded/read-ahead position");
+    player.toggle_pause();
+    const auto paused = log.status(300, PlaybackStatus::paused);
+    check(paused.event.position_ms >= progress.event.position_ms && paused.event.position_ms < 1000,
+          "Pause must preserve the consumed position");
+    const auto from = log.items.size();
+    log.collect(350ms);
+    check(log.items.size() == from, "Paused progress must remain frozen");
+    player.toggle_pause();
+    log.wait([&](const AudioEvent& event) {
+        return event.progress_only && event.position_ms > paused.event.position_ms;
+    }, from);
+    player.stop();
+    const auto stopped = log.status(300, PlaybackStatus::stopped, from);
+    check(stopped.event.position_ms == 0 && !stopped.event.duration_ms, "Stop must clear progress");
+    const auto replaced_from = log.items.size();
+    player.play(301, single(fixture.medium), {}, 0.5F);
+    const auto next = log.playing(301, 0, false, replaced_from);
+    check(next.event.position_ms < 100 && next.event.duration_ms == 900,
+          "A new point must start with its own duration and zero-based progress");
+    log.only_session(301, replaced_from);
+    player.stop();
+    log.status(301, PlaybackStatus::stopped, replaced_from);
+    log.no_error();
+}
+
+void progress_resets_between_available_languages(const Fixtures& fixture) {
+    MiniaudioPlayer player(true);
+    EventLog log(player, true);
+    auto plan = sequence(fixture, 200);
+    plan.tracks[0].path = fixture.medium;
+    plan.tracks[1].path = fixture.missing;
+    player.play(310, plan, {}, 0.5F);
+    const auto gap = log.playing(310, 0, true);
+    check(gap.event.duration_ms == 900 && gap.event.position_ms == 900 && gap.event.next_track_index == 2,
+          "Gap must report completed PCM and the next available language");
+    const auto next = log.playing(310, 2, false);
+    check(next.event.duration_ms == 220 && next.event.position_ms < 100,
+          "Next available language must reset progress and duration");
+    log.status(310, PlaybackStatus::stopped);
+    std::uint64_t positions[3]{};
+    bool completed_last = false;
+    for (const auto& item : log.items) {
+        const auto& event = item.event;
+        if (event.status != PlaybackStatus::playing) continue;
+        check(event.duration_ms && event.position_ms <= *event.duration_ms,
+              "Progress must be bounded by the current duration");
+        check(event.position_ms >= positions[event.track_index], "Progress must be monotonic within a track");
+        positions[event.track_index] = event.position_ms;
+        completed_last |= event.track_index == 2 && event.position_ms == 220;
+    }
+    check(completed_last, "The last track must publish completion before stopping");
+    log.no_error();
+}
+
+void progress_queue_is_bounded(const Fixtures& fixture) {
+    MiniaudioPlayer player(true);
+    player.play(320, single(fixture.long_track), {}, 0.5F);
+    std::this_thread::sleep_for(600ms);
+    const auto events = player.poll_events();
+    check(std::count_if(events.begin(), events.end(), [](const AudioEvent& event) {
+        return event.progress_only;
+    }) == 1, "An unpolled track must retain only its latest progress sample");
+    player.stop();
 }
 
 void stop_during_track(const Fixtures& fixture) {
@@ -727,6 +804,9 @@ int main() {
         const std::vector<Test> tests{
             {"construction and explicit null devices", creation_and_devices},
             {"three languages, real time, order and gap indices", three_languages_and_indices},
+            {"PCM progress, pause, stop and replacement", pcm_progress_pause_stop_and_replacement},
+            {"progress across gaps and missing languages", progress_resets_between_available_languages},
+            {"progress queue remains bounded", progress_queue_is_bounded},
             {"stop during track and pending preflight", stop_during_track},
             {"stop cancels gap", stop_during_gap},
             {"pause and resume PCM", pause_and_resume_track},

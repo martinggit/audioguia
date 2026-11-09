@@ -112,7 +112,9 @@ fs::path backup_path(const ConfigRepository& repository) {
 void check_state(const AudioEvent& actual, const AudioEvent& expected) {
     check(actual.session == expected.session && actual.status == expected.status &&
           actual.track_index == expected.track_index && actual.between_languages == expected.between_languages &&
-          actual.message == expected.message, "Unexpected controller state/session");
+          actual.message == expected.message && actual.next_track_index == expected.next_track_index &&
+          actual.position_ms == expected.position_ms && actual.duration_ms == expected.duration_ms &&
+          actual.progress_only == expected.progress_only, "Unexpected controller state/session/progress");
 }
 
 void check_plan(const PlaybackPlan& actual, const PlaybackPlan& expected) {
@@ -310,7 +312,7 @@ void stale_events_and_poll_order() {
     const auto current_session = app.state().session;
     check(current_session > old_session, "New play must advance the session");
     const auto plan = app.active_plan().value();
-    const AudioEvent current{current_session, PlaybackStatus::playing, 0, true, "current gap", 2};
+    const AudioEvent current{current_session, PlaybackStatus::playing, 0, true, "current gap", 2, 900, 900, true};
     fake.pending = {{old_session, PlaybackStatus::error, 2, false, "old error"}, current,
                     {old_session, PlaybackStatus::stopped, 0, false, "old stopped"},
                     {current_session + 1, PlaybackStatus::error, 0, false, "unrequested future session"}};

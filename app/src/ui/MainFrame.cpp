@@ -33,6 +33,51 @@
 #endif
 
 namespace audioguia {
+
+// Preserve the native button's activation, focus, accessibility and hover drawing.
+// Draw only the non-interactive progress strip on top of that native surface.
+class PlaybackButton final : public wxButton {
+public:
+    explicit PlaybackButton(wxWindow* parent)
+        : wxButton(parent, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxBU_LEFT) {
+#ifdef _WIN32
+        MakeOwnerDrawn();
+#endif
+    }
+    void set_progress(bool visible, int value) {
+        value = std::clamp(value, 0, 1000);
+        if (visible_ != visible || value_ != value) {
+            visible_ = visible;
+            value_ = value;
+            Refresh(false);
+        }
+    }
+#ifdef _WIN32
+    bool MSWOnDraw(WXDRAWITEMSTRUCT* item) override {
+        const bool drawn = wxButton::MSWOnDraw(item);
+        if (!drawn || !visible_) return drawn;
+        const auto& native = *reinterpret_cast<DRAWITEMSTRUCT*>(item);
+        RECT bar = native.rcItem;
+        bar.left += FromDIP(8);
+        bar.right -= FromDIP(8);
+        bar.bottom -= FromDIP(3);
+        bar.top = bar.bottom - FromDIP(5);
+        if (bar.right <= bar.left) return drawn;
+        auto brush = ::CreateSolidBrush(RGB(205, 219, 211));
+        ::FillRect(native.hDC, &bar, brush);
+        ::DeleteObject(brush);
+        bar.right = bar.left + (bar.right - bar.left) * value_ / 1000;
+        brush = ::CreateSolidBrush(RGB(26, 155, 89));
+        ::FillRect(native.hDC, &bar, brush);
+        ::DeleteObject(brush);
+        return true;
+    }
+#endif
+private:
+    bool visible_{false};
+    int value_{0};
+};
+
 namespace {
 
 constexpr std::array<Language, 3> languages{Language::es, Language::en, Language::pt};
@@ -45,6 +90,18 @@ const wxColour amber(133, 83, 5);
 const wxColour red(158, 43, 40);
 
 wxString utf8(const std::string& text) { return wxString::FromUTF8(text.c_str()); }
+
+std::string audio_time(std::uint64_t milliseconds) {
+    const auto seconds = milliseconds / 1000;
+    const auto minutes = seconds / 60;
+    return (minutes < 10 ? "0" : "") + std::to_string(minutes) + ":" +
+        (seconds % 60 < 10 ? "0" : "") + std::to_string(seconds % 60);
+}
+
+std::string progress_text(const AudioEvent& state) {
+    return audio_time(state.position_ms) + " / " +
+        (state.duration_ms ? audio_time(*state.duration_ms + 999) : "--:--");
+}
 
 void set_label(wxStaticText* control, const wxString& text) {
     if (control->GetLabel() != text) {
@@ -78,7 +135,7 @@ wxColour state_colour(PlaybackStatus status) {
 // Keep native buttons (mouse, keyboard, accessibility) and add a large numpad badge.
 wxBitmap key_badge(wxWindow* window, int key, PlaybackStatus status) {
     wxBitmap bitmap;
-    bitmap.CreateWithDIPSize(wxSize(76, 54), window->GetDPIScaleFactor());
+    bitmap.CreateWithDIPSize(wxSize(58, 54), window->GetDPIScaleFactor());
     wxMemoryDC dc(bitmap);
     dc.SetBackground(wxBrush(window->GetBackgroundColour()));
     dc.Clear();
@@ -193,13 +250,11 @@ MainFrame::MainFrame(AppController& controller, std::function<void()> on_compact
             controls.id = found == controller_.config().points.end() ? std::string{} : found->id;
             controls.direction = direction;
             controls.number = number;
-            controls.name_button = new wxButton(panel, wxID_ANY, wxEmptyString,
-                                                 wxDefaultPosition, wxDefaultSize, wxBU_LEFT);
+            controls.name_button = new PlaybackButton(panel);
             controls.name_button->SetMinSize(FromDIP(wxSize(0, 76)));
             controls.name_button->SetFont(font.Bold().Larger());
             controls.name_button->SetForegroundColour(ink);
             controls.name_button->SetBackgroundColour(*wxWHITE);
-            controls.name_button->SetBitmapMargins(FromDIP(12), FromDIP(8));
             controls.name_button->Bind(wxEVT_BUTTON, [this, direction, number](wxCommandEvent&) {
                 play_point(direction, number);
             });
@@ -424,7 +479,15 @@ void MainFrame::refresh_state() {
             controls.badge_status = badge_status;
             controls.name_button->SetBackgroundColour(highlighted ? wxColour(224, 241, 233) : *wxWHITE);
             controls.name_button->SetBitmap(key_badge(controls.name_button, key, badge_status));
+            // Margins belong to the native button, not an opaque bitmap rectangle.
+            // wxWidgets requires a bitmap before it can set bitmap margins.
+            controls.name_button->SetBitmapMargins(FromDIP(9), FromDIP(4));
         }
+        const bool progress_visible = highlighted &&
+            (state.status == PlaybackStatus::playing || state.status == PlaybackStatus::paused);
+        const int progress = state.duration_ms && *state.duration_ms > 0
+            ? static_cast<int>(std::min(1000.0, 1000.0 * state.position_ms / *state.duration_ms)) : 0;
+        controls.name_button->set_progress(progress_visible, progress);
         const auto point = std::find_if(controller_.config().points.begin(), controller_.config().points.end(),
             [&controls](const Point& candidate) { return candidate.id == controls.id; });
         if (point == controller_.config().points.end()) continue;
@@ -442,7 +505,14 @@ void MainFrame::refresh_state() {
         }
         if (!wrapped.empty()) wrapped += "\n";
         wrapped += current;
-        if (highlighted) wrapped += "\n" + utf8(controller_.status_text());
+        if (progress_visible) {
+            if (state.between_languages) {
+                wrapped += "\nEsperando proximo idioma";
+            } else if (active && state.track_index < active->tracks.size()) {
+                wrapped += "\n" + utf8(short_label(active->tracks[state.track_index].language) +
+                    " | " + progress_text(state));
+            }
+        } else if (highlighted) wrapped += "\n" + utf8(controller_.status_text());
         if (controls.name_button->GetLabel() != wrapped) {
             controls.name_button->SetLabel(wrapped);
             const auto description = utf8(label(controls.direction) + " " + std::to_string(controls.number) +
@@ -452,7 +522,10 @@ void MainFrame::refresh_state() {
         }
     }
     set_label(playing_title_, utf8(controller_.playback_title()));
-    set_label(playing_detail_, utf8(controller_.playback_detail()));
+    auto detail = controller_.playback_detail();
+    if ((state.status == PlaybackStatus::playing || state.status == PlaybackStatus::paused) && !state.between_languages)
+        detail += " | " + progress_text(state);
+    set_label(playing_detail_, utf8(detail));
     set_label(status_, utf8(controller_.status_text()));
     const wxString pause_label = (preferences.keyboard.enter_pauses ? "ENTER  |  " : "") +
         wxString(state.status == PlaybackStatus::paused ? "Reanudar" : "Pausar");

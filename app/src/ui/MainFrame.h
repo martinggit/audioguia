@@ -20,6 +20,7 @@ class wxScrolledWindow;
 namespace audioguia {
 
 class AppController;
+class PlaybackButton;
 
 class MainFrame final : public wxFrame {
 public:
@@ -34,7 +35,7 @@ private:
         std::string id;
         Direction direction{Direction::up};
         int number{1};
-        wxButton* name_button{nullptr};
+        PlaybackButton* name_button{nullptr};
         int badge_key{-1};
         PlaybackStatus badge_status{PlaybackStatus::stopped};
     };

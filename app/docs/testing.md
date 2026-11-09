@@ -36,7 +36,13 @@ Bloq Num estaba apagado: el bloque de digitos del numpad se omitio y no se modif
 
 Se reemplazo el selector desplegable por una lista nativa de tres filas con casillas, posiciones y estado de inclusion. Las cuatro suites CTest pasaron. El smoke test sobre una copia con raiz Unicode termino con 76 comprobaciones aprobadas: incluye Subir/Bajar, arrastre con mouse en ambas direcciones (incluido ultimo a primero), activacion y exclusion, persistencia del orden, permanencia de las tres filas y rechazo de desmarcar el ultimo idioma. Se revisaron las capturas `sequence-editor.png` y `sequence-three-languages.png` en `app/build/ui-smoke/evidence-unicode/`. El bloque de digitos del numpad se omitio por Bloq Num apagado, como en la verificacion anterior.
 
-### Capturas iniciales
+### Progreso PCM y correcciones visuales (2026-11-09)
+
+Las cuatro suites CTest pasaron. La suite de audio agrega pruebas de posicion PCM frente a lectura anticipada, duracion, congelamiento al pausar, reanudacion, limpieza al detener, reemplazo, reinicio entre idiomas con faltantes y coalescencia de eventos para una interfaz que no los drena. El controlador verifica la transferencia de los nuevos campos junto con la sesion y pista.
+
+El smoke test con raiz Unicode y WAV sinteticos sobre WASAPI termino con 81 comprobaciones aprobadas. Verifica duracion visible, texto de progreso congelado al pausar y limpieza al detener; tambien comprueba que el aviso de Configuracion este oculto al abrir y visible tras editar una asociacion (descartada con Cancelar). Se revisaron las capturas `point-progress-paused.png`, `main-down.png`, `preferences.png` y `preferences-notice.png` en `app/build/ui-smoke/evidence-unicode/`: barra verde parcial, margen numerico integrado y area de avisos condicional. Bloq Num estaba apagado; las pruebas de digitos del smoke siguen omitidas. Esta ejecucion no constituye una nueva prueba de escucha con los MP3 operativos.
+
+### Referencia visual inicial
 
 Se abrieron la referencia temporal original y capturas de la aplicacion real. Se corrigio la distribucion inicial para mostrar los ocho puntos UP y los seis DOWN en la vista principal de prueba, manteniendo numeracion celeste, superficies claras, nombres legibles e identidad textual. El editor personalizado ocupa el espacio libre bajo DOWN. No se invento un logo ni se usa la imagen como interfaz.
 

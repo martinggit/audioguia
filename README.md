@@ -86,6 +86,8 @@ UP y DOWN son los dos grupos de puntos del recorrido; no son controles de volume
 
 Arriba siempre tenés el punto actual, su idioma y los botones **Enter · Pausar/Reanudar** y **0 · Detener**. El punto activo también se resalta en la botonera. Abajo, **PREPARAR SIGUIENTE** muestra la selección que se usará en el próximo disparo.
 
+El botón del punto activo muestra una **barra verde de avance**, el idioma y el tiempo transcurrido / duración (por ejemplo, `ESP | 00:35 / 02:10`). Se congela al pausar, empieza de nuevo con cada idioma y se limpia al detener. Durante el intervalo indica **Esperando próximo idioma**. Si no se puede obtener la duración, aparece `--:--` sin inventar un porcentaje. La barra es informativa: hacer clic sigue disparando el punto, no adelanta ni retrocede el audio.
+
 Si querés probar portugués, seleccioná ese idioma y volvé a presionar Bienvenida. No necesitás cargar todos los puntos para hacer esta primera prueba.
 
 ## 4. Elegir cómo se reproducen los idiomas
@@ -118,6 +120,8 @@ Al terminar los idiomas de un punto, la app se detiene. Para escuchar otro punto
 El volumen de la app controla sus narraciones, sin cambiar el volumen general de Windows. En **Configurar audios y salida** podés elegir dónde escuchar: por ejemplo, parlantes o una salida USB.
 
 Cambiar la salida desde la app detiene la reproducción actual. Si se desconecta el dispositivo, la app informa el error; elegí una salida disponible y presioná nuevamente el punto para reproducirlo.
+
+El área de avisos al pie de Configuración aparece únicamente cuando hay un mensaje, por ejemplo una asociación pendiente o un error al guardar. No es un campo para completar.
 
 ### Vista compacta
 
@@ -189,35 +193,6 @@ Para editar sin Windows se pueden revisar fuentes y documentacion, pero la inter
 Se incluyen fuentes, pruebas, CMake, scripts, documentacion, versiones de dependencias y `app/config/audioguia.example.json`. Los directorios de audio se conservan mediante archivos `.gitkeep`.
 
 No se incluyen herramientas, dependencias descargadas, compilaciones, ejecutables, ZIP, audios, preferencias locales ni capturas/logs generados. `.gitignore` los excluye sin borrarlos del disco. Cada computadora ejecuta el bootstrap para reconstruir su entorno y mantiene su propia configuracion. Los audios reales se copian por separado en las tres carpetas documentadas en [LEEME.md](LEEME.md).
-
-### Trabajo entre dos computadoras
-
-Antes de empezar, con el trabajo anterior guardado:
-
-```powershell
-git status
-git pull --ff-only
-```
-
-Despues de editar y probar:
-
-```powershell
-git status
-git add README.md app/src app/tests app/scripts app/docs
-git diff --cached --stat
-git commit -m "Describe el cambio realizado"
-git push
-```
-
-La lista de `git add` es un ejemplo: agregar solo las rutas realmente modificadas, incluidos CMake o configuracion de ejemplo cuando corresponda. Revisar lo preparado antes del commit. Hacer commit y push antes de cambiar de computadora; los cambios sin commit no se trasladan con GitHub.
-
-**Descartar cambios no es lo mismo que quitar archivos del area de preparacion.** Para corregir un `git add` en un repositorio con commits, usar:
-
-```powershell
-git restore --staged .
-```
-
-Esto conserva los archivos de trabajo. No usar Descartar todos, `git clean` ni `git reset --hard` para reducir la lista de archivos. Si `git pull --ff-only` informa que no puede avanzar, detenerse y revisar las ramas; no forzar el push.
 
 ### Pruebas y distribución
 

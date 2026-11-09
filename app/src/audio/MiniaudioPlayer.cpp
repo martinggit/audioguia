@@ -50,7 +50,9 @@ static_assert(std::atomic<bool>::is_always_lock_free,
 static_assert(std::atomic<std::uint32_t>::is_always_lock_free,
               "The audio callback requires a lock-free generation counter");
 static_assert(std::atomic<ma_result>::is_always_lock_free,
-              "The audio callback requires lock-free error reporting");
+               "The audio callback requires lock-free error reporting");
+static_assert(std::atomic<std::uint64_t>::is_always_lock_free,
+              "The audio callback requires a lock-free PCM counter");
 
 bool valid_volume(float volume) noexcept {
     return std::isfinite(volume) && volume >= 0.0F && volume <= 1.0F;
@@ -390,13 +392,35 @@ struct MiniaudioPlayer::Impl {
         return active_generation_ == generation_.load(std::memory_order_acquire);
     }
 
-    void post(PlaybackStatus status, bool between = false, std::string message = {}) {
+    void post(PlaybackStatus status, bool between = false, std::string message = {}, bool progress_only = false) {
         std::lock_guard<std::mutex> lock(mutex_);
         if (!quitting_ && current()) {
-            events_.push_back({session_, status, track_index_, between, std::move(message),
-                              between ? std::optional<std::size_t>{next_available(track_index_ + 1)}
-                                      : std::nullopt});
+            AudioEvent event{session_, status, track_index_, between, std::move(message),
+                             between ? std::optional<std::size_t>{next_available(track_index_ + 1)}
+                                     : std::nullopt};
+            if (status == PlaybackStatus::playing || status == PlaybackStatus::paused) {
+                const auto frames = consumed_frames_.load(std::memory_order_relaxed);
+                event.position_ms = frames * 1000 / sample_rate;
+                if (duration_frames_) {
+                    event.duration_ms = *duration_frames_ * 1000 / sample_rate;
+                    event.position_ms = std::min(event.position_ms, *event.duration_ms);
+                }
+            }
+            event.progress_only = progress_only;
+            // A slow/minimized UI needs only the latest progress sample, not a backlog.
+            if (progress_only && !events_.empty() && events_.back().progress_only &&
+                events_.back().session == session_ && events_.back().track_index == track_index_) {
+                events_.back() = std::move(event);
+            } else events_.push_back(std::move(event));
         }
+    }
+
+    void publish_progress() {
+        if (phase_ != Phase::track || render_paused_.load(std::memory_order_acquire)) return;
+        const auto now = Clock::now();
+        if (now < next_progress_) return;
+        next_progress_ = now + std::chrono::milliseconds{100};
+        post(PlaybackStatus::playing, false, {}, true);
     }
 
     std::string contextual_message(const std::string& detail) const {
@@ -541,7 +565,14 @@ struct MiniaudioPlayer::Impl {
         // The callback's done latch is closed, and the SPSC ring is empty here.
         // Never reset/uninitialize a ring that a live callback could access.
         source_eof_.store(false, std::memory_order_release);
+        consumed_frames_.store(0, std::memory_order_relaxed);
+        duration_frames_.reset();
+        next_progress_ = Clock::now() + std::chrono::milliseconds{100};
         decoder_.open(plan_.tracks[track_index_].path);
+        ma_uint64 length = 0;
+        if (ma_decoder_get_length_in_pcm_frames(&decoder_.value, &length) == MA_SUCCESS && length > 0) {
+            duration_frames_ = length;
+        }
         while (current() && !source_eof_.load(std::memory_order_acquire) &&
                ma_pcm_rb_available_write(&ring_) != 0) {
             fill_buffer();
@@ -680,6 +711,8 @@ struct MiniaudioPlayer::Impl {
                 return;
             }
             require_success("ma_decoder_uninit", decoder_.close());
+            // EOF establishes the actual duration, including codecs without length metadata.
+            duration_frames_ = consumed_frames_.load(std::memory_order_relaxed);
             if (next_available(track_index_ + 1) < plan_.tracks.size()) {
                 phase_ = Phase::gap;
                 deadline_ = Clock::now() + std::chrono::milliseconds{plan_.gap_ms};
@@ -689,6 +722,7 @@ struct MiniaudioPlayer::Impl {
                 // running silence long enough to avoid cutting off its final buffer.
                 phase_ = Phase::draining;
                 deadline_ = Clock::now() + tail_duration();
+                post(PlaybackStatus::playing, false, {}, true);
             }
         } else if (phase_ == Phase::gap && Clock::now() >= deadline_) {
             track_index_ = next_available(track_index_ + 1);
@@ -849,6 +883,7 @@ struct MiniaudioPlayer::Impl {
             if (phase_ != Phase::idle && current()) {
                 try {
                     tick();
+                    publish_progress();
                 } catch (const std::exception& error) {
                     fail(error.what());
                 } catch (...) {
@@ -900,6 +935,7 @@ struct MiniaudioPlayer::Impl {
             }
             copied += count;
         }
+        self.consumed_frames_.fetch_add(copied, std::memory_order_relaxed);
         if (self.source_eof_.load(std::memory_order_acquire) &&
             ma_pcm_rb_available_read(&self.ring_) == 0) {
             // This MUST be the callback's final state access. Until the worker
@@ -951,6 +987,9 @@ struct MiniaudioPlayer::Impl {
     std::atomic<bool> render_paused_{true};
     std::atomic<bool> source_eof_{false};
     std::atomic<bool> track_done_{true};
+    std::atomic<std::uint64_t> consumed_frames_{0};
+    std::optional<std::uint64_t> duration_frames_;
+    Clock::time_point next_progress_{};
     std::atomic<bool> expected_stop_{true};
     std::atomic<bool> unexpected_stop_{false};
     std::atomic<ma_result> callback_error_{MA_SUCCESS};
