@@ -1,0 +1,22 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "windows-x86-release",
+      "displayName": "Portable Windows x86 Release",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/windows-x86-release",
+      "environment": { "PATH": "${sourceDir}/.tools/w64devkit/bin;$penv{PATH}" },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "${sourceDir}/.tools/w64devkit/bin/gcc.exe",
+        "CMAKE_CXX_COMPILER": "${sourceDir}/.tools/w64devkit/bin/g++.exe",
+        "CMAKE_RC_COMPILER": "${sourceDir}/.tools/w64devkit/bin/windres.exe",
+        "CMAKE_MAKE_PROGRAM": "${sourceDir}/.tools/w64devkit/bin/ninja.exe",
+        "BUILD_TESTING": "ON"
+      }
+    }
+  ],
+  "buildPresets": [{ "name": "windows-x86-release", "configurePreset": "windows-x86-release", "jobs": 4 }],
+  "testPresets": [{ "name": "windows-x86-release", "configurePreset": "windows-x86-release", "output": { "outputOnFailure": true } }]
+}

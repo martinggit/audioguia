@@ -1,0 +1,22 @@
+{
+  "toolchain": {
+    "name": "w64devkit-x86", "version": "2.11.0", "gcc": "16.2.0", "mingw_w64": "14.0.0", "cmake": "4.4.4", "ninja": "1.13.2",
+    "url": "https://github.com/skeeto/w64devkit/releases/download/v2.11.0/w64devkit-x86-2.11.0.7z.exe",
+    "sha256": "f7e8c79eacc4cbdd718a4cbb6519f2f370311017dc08f7750abedb4340d1b65d"
+  },
+  "wxwidgets": {
+    "version": "3.2.12", "license": "wxWindows Library Licence 3.1 plus bundled library notices",
+    "url": "https://github.com/wxWidgets/wxWidgets/releases/download/v3.2.12/wxWidgets-3.2.12.zip",
+    "sha256": "1f7ec935dddbba5cf454795dc255ef1e21c668533f5a5951a6034f2949c80433"
+  },
+  "miniaudio": {
+    "version": "0.11.26", "license": "MIT-0 or Unlicense",
+    "url": "https://raw.githubusercontent.com/mackron/miniaudio/0.11.26/miniaudio.h",
+    "sha256": "6b376c7fbb1352ba1e0e432ab66069b335ea9405e45cb6c30b97ef0f3c9c3e0e"
+  },
+  "json": {
+    "name": "nlohmann/json", "version": "3.12.0", "license": "MIT",
+    "url": "https://github.com/nlohmann/json/releases/download/v3.12.0/json.hpp",
+    "sha256": "aaf127c04cb31c406e5b04a63f1ae89369fccde6d8fa7cdda1ed4f32dfc5de63"
+  }
+}

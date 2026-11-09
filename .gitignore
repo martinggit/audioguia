@@ -1,0 +1,32 @@
+# Reproducible downloads and generated builds, not project sources.
+/app/.tools/
+/app/vendor/
+/app/build/
+/app/dist/
+/app/*.exe
+/app/CMakeUserPresets.json
+
+# Local preferences and generated verification evidence.
+/app/config/audioguia.json
+/app/config/*.bak
+/app/config/*.tmp
+/app/docs/screenshots/
+/app/docs/test-results/
+/app/docs/visual-verification.json
+/app/licenses/*
+!/app/licenses/README.md
+
+# Keep directory placeholders, never operational audio or other private assets.
+/audio/**
+!/audio/**/
+!/audio/**/.gitkeep
+
+# Local editor and agent configuration.
+/.agents/
+/.opencode/
+/skills-lock.json
+/.vs/
+/.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
