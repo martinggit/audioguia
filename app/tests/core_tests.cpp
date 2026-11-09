@@ -170,7 +170,7 @@ constexpr std::array<CatalogExpectation, 14> catalog{{
 }};
 
 const std::array<std::pair<Language, const char*>, 3> language_folders{{
-    {Language::es, "0001-ESP"}, {Language::en, "0002-ENG"}, {Language::pt, "0003-PORR"},
+    {Language::es, "0001-ESP"}, {Language::en, "0002-ENG"}, {Language::pt, "0003-PORT"},
 }};
 
 fs::path expected_audio(Language language, const char* file) {

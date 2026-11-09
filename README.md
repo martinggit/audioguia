@@ -1,8 +1,161 @@
-# Audioguia Tolkeyen Patagonia Turismo
+# Audioguía Tolkeyen Patagonia Turismo
 
-Aplicacion desktop portable C++17 con wxWidgets 3.2, miniaudio y configuracion JSON. Botonera UP/DOWN, modos Simple/Secuencial/Personalizado, numpad con foco y vista compacta sobre un unico reproductor.
+Una aplicación para Windows que permite **reproducir narraciones de un recorrido turístico con un clic**, en español, inglés y portugués.
 
-## Desarrollar Desde Otra Computadora
+Está pensada para que un guía u operador elija qué explicación escuchar en cada momento, sin tener que buscar archivos uno por uno. Por ejemplo: al llegar a Isla de los Lobos, presiona su botón y la app reproduce la narración en los idiomas elegidos.
+
+Los audios se guardan en la computadora: no hace falta internet para reproducirlos. **El operador decide cuándo iniciar cada punto; la app no se activa por GPS ni avanza sola por el recorrido.**
+
+## 1. Qué necesitás para probarla
+
+- Una computadora con Windows y una salida de sonido, como parlantes o auriculares.
+- La aplicación compilada: el archivo `TolkeyenAudioguia.exe` dentro de la carpeta `app`.
+- Al menos un audio MP3 para escuchar una narración. Los audios reales no se incluyen en este repositorio.
+
+La aplicación fue probada en Windows 11. Windows 7 SP1 y Windows 10 son objetivos previstos, pero todavía no tienen validación real. Windows XP queda fuera del alcance.
+
+**Si recibiste un ZIP con la aplicación:** extraelo completo en una carpeta, por ejemplo dentro de Documentos. No ejecutes la app desde adentro del ZIP. Conservá juntas las carpetas `app` y `audio`.
+
+**Si descargaste el código desde GitHub y no encontrás el `.exe`:** primero seguí la sección [Compilar desde el código fuente](#compilar-desde-el-código-fuente), al final de esta guía. Descargar el código no incluye el programa ya compilado.
+
+## 2. Colocar los audios
+
+Abrí la carpeta del proyecto en el Explorador de Windows. La estructura debe ser así:
+
+```text
+Audioguia/
+├── app/
+│   ├── TolkeyenAudioguia.exe
+│   └── config/
+└── audio/
+    ├── 0001-ESP/       Audios en español
+    ├── 0002-ENG/       Audios en inglés
+    └── 0003-PORT/      Audios en portugués
+```
+
+La carpeta se llama **`audio`**, en singular. Conservá los nombres completos de las carpetas de idiomas, incluido `0003-PORT`.
+
+Para una primera prueba, copiá el audio de Bienvenida en español con este nombre:
+
+```text
+audio/0001-ESP/0001.mp3
+```
+
+Para el mismo punto en portugués, usá:
+
+```text
+audio/0003-PORT/0001.mp3
+```
+
+Los archivos deben tener cuatro dígitos: `0001.mp3`, `0002.mp3`, etc. El nombre inicial esperado **no lleva el idioma al final**: `0001ESP.mp3` no coincide con `0001.mp3`. En el Explorador, activá la visualización de extensiones para evitar nombres como `0001.mp3.mp3`.
+
+### ¿Qué archivo corresponde a cada botón?
+
+El nombre es el mismo en las tres carpetas; cambia el idioma de la grabación.
+
+| Grupo | Botón | Archivo | Narración |
+| --- | --- | --- | --- |
+| UP | 1 | `0001.mp3` | Bienvenida |
+| UP | 2 | `0002.mp3` | Cárcel y ciudad |
+| UP | 3 | `0003.mp3` | Isla de los Lobos |
+| UP | 4 | `0004.mp3` | Isla de los Pájaros |
+| UP | 5 | `0005.mp3` | Canal Beagle |
+| UP | 6 | `0006.mp3` | Yámanas |
+| UP | 7 | `0007.mp3` | Isla Bridge |
+| UP | 8 | `0008.mp3` | Archipiélago Les Éclaireurs |
+| DOWN | 1 | `0009.mp3` | Monte Cervantes |
+| DOWN | 2 | `0010.mp3` | Pingüinera |
+| DOWN | 3 | `0011.mp3` | Estancia Harberton |
+| DOWN | 4 | `0012.mp3` | Puerto Williams |
+| DOWN | 5 | `0013.mp3` | Estancia Túnel |
+| DOWN | 6 | `0014.mp3` | Saint Christopher |
+
+UP y DOWN son los dos grupos de puntos del recorrido; no son controles de volumen. Los archivos `0015.mp3` y `0016.mp3` están reservados y no tienen un botón asignado.
+
+**Si querés conservar otros nombres:** copiá los archivos dentro de `audio`, abrí **Configurar audios y salida**, elegí el punto y el idioma y usá **Buscar archivo** para asociar el MP3 correspondiente. Aplicá los cambios. La app usa esas asociaciones, no el orden en que aparecen los archivos en la carpeta.
+
+## 3. Escuchar tu primer audio
+
+1. Abrí la carpeta `app` y hacé doble clic en **`TolkeyenAudioguia.exe`**. Dejá el ejecutable dentro de esa carpeta.
+2. La ventana se abre detenida: no empieza a sonar nada automáticamente.
+3. Ajustá el volumen de la app a un nivel bajo, por ejemplo 10–20%, y verificá que Windows no esté silenciado.
+4. Seleccioná **UP**, modo **Simple** e idioma **Español**.
+5. Presioná **Bienvenida**. Debe reproducirse `audio/0001-ESP/0001.mp3`.
+6. Usá **Pausar/Reanudar** para interrumpir momentáneamente y continuar desde la misma posición.
+7. Usá **Detener** para terminar la reproducción.
+
+Si querés probar portugués, seleccioná ese idioma y volvé a presionar Bienvenida. No necesitás cargar todos los puntos para hacer esta primera prueba.
+
+## 4. Elegir cómo se reproducen los idiomas
+
+| Modo | Qué hace | Ejemplo |
+| --- | --- | --- |
+| **Simple** | Reproduce el punto en un solo idioma. | Bienvenida en español. |
+| **Secuencial** | Reproduce el mismo punto en español, inglés y portugués, en ese orden. | Bienvenida en español → inglés → portugués. |
+| **Personalizado** | Reproduce solo los idiomas elegidos, en el orden que prepares con Subir/Bajar. | Bienvenida en portugués → español. |
+
+**Si falta el archivo de un idioma, la app lo salta y sigue con el próximo disponible.** Por ejemplo, si tenés español y portugués pero todavía no inglés, Secuencial reproduce español → portugués. Si no encuentra ningún archivo para los idiomas seleccionados, muestra un error. Un archivo presente pero dañado o inaccesible también puede producir un error.
+
+Entre idiomas hay una pausa de un segundo por defecto. Podés cambiarla en **Configurar audios y salida**, entre 0 y 60 segundos.
+
+Al terminar los idiomas de un punto, la app se detiene. Para escuchar otro punto, presioná su botón.
+
+### Preparar lo siguiente mientras suena un audio
+
+- Cambiar el modo o los idiomas prepara el próximo punto que dispares; no cambia la secuencia que ya está sonando.
+- Presionar otro punto cancela el anterior y comienza la nueva selección. Las narraciones no se mezclan.
+- Pausar durante el intervalo entre idiomas conserva el tiempo que faltaba para continuar.
+- Detener cancela tanto la pista actual como los idiomas pendientes.
+
+## 5. Controles útiles durante el recorrido
+
+### Volumen y dispositivo de salida
+
+El volumen de la app controla sus narraciones, sin cambiar el volumen general de Windows. En **Configurar audios y salida** podés elegir dónde escuchar: por ejemplo, parlantes o una salida USB.
+
+Cambiar la salida desde la app detiene la reproducción actual. Si se desconecta el dispositivo, la app informa el error; elegí una salida disponible y presioná nuevamente el punto para reproducirlo.
+
+### Vista compacta
+
+La vista compacta ocupa menos espacio y comparte la misma reproducción con la ventana completa: podés alternar entre ambas mientras escuchás. La opción **Siempre visible** permite mantenerla por encima de otras ventanas.
+
+Cerrar la vista compacta vuelve a la ventana completa. **Para salir de la aplicación, cerrá la ventana completa.**
+
+### Teclado numérico (opcional)
+
+También podés operar con el mouse; no hace falta un teclado numérico para usar la app.
+
+Con la ventana de Audioguía activa y Bloq Num encendido:
+
+| Tecla del numpad | Acción |
+| --- | --- |
+| **1–8** | Reproduce el punto correspondiente del grupo seleccionado. En DOWN, 7 y 8 no hacen nada. |
+| **0** | Detiene la reproducción. |
+| **Enter del numpad** | Pausa o reanuda. No es el Enter principal del teclado. |
+
+Los atajos se suspenden al editar preferencias, selectores o volumen, y cuando estás usando otra aplicación. **Siempre visible no significa que los atajos funcionen en segundo plano.** Mantener una tecla presionada no dispara el audio repetidamente.
+
+## 6. Si algo no funciona
+
+| Problema | Qué revisar |
+| --- | --- |
+| No encuentro `TolkeyenAudioguia.exe`. | El repositorio contiene código fuente. Seguí la sección de compilación o conseguí el paquete portable ya compilado. |
+| Aparece “No hay audios disponibles”. | Revisá el punto, los idiomas y las rutas. Para Bienvenida en español, la asociación inicial busca `audio/0001-ESP/0001.mp3`. |
+| Los archivos tienen nombres como `0001ESP.mp3`. | Renombrá a `0001.mp3` o asocialos desde Configurar audios y salida → Buscar archivo. |
+| No tengo audios en inglés. | Podés usar Secuencial: saltará los archivos ausentes. También podés seleccionar solo español y portugués en Personalizado. |
+| La app indica que reproduce, pero no escucho. | Revisá el volumen de la app, el de Windows, la salida seleccionada y la conexión de parlantes o auriculares. |
+| Un MP3 está presente, pero aparece un error. | Probalo en otro reproductor y verificá que sea un audio válido. Renombrar otro tipo de archivo a `.mp3` no lo convierte. |
+| El numpad no responde. | Activá la ventana de Audioguía, encendé Bloq Num y salí de los controles de edición. Probá el botón con el mouse. |
+| Aparece un aviso al guardar preferencias. | Usá una carpeta con permisos de escritura, como Documentos. Los cambios pueden seguir activos solo durante esa sesión. |
+| Aparece un aviso de configuración inválida. | Cerrá la app y revisá `app/config/audioguia.json`, o restaurá una copia válida de `audioguia.json.bak`. El archivo inválido no se sobrescribe automáticamente. |
+
+Si el problema continúa, copiá el mensaje completo e indicá qué punto, idioma y salida estabas usando.
+
+## Información para desarrollo
+
+La aplicación está implementada en C++17 con wxWidgets 3.2, miniaudio y configuración JSON. Esta sección es para generar el ejecutable o modificar el código; si ya tenés la aplicación compilada, podés usarla sin instalar herramientas de desarrollo.
+
+### Compilar desde el código fuente
 
 En Windows, instalar Git for Windows y abrir PowerShell en la carpeta donde guardar los proyectos. No hace falta instalar Visual Studio, CMake ni MinGW globalmente.
 
@@ -23,13 +176,13 @@ El resultado es `app/TolkeyenAudioguia.exe`. Para ejecutarlo:
 
 Para editar sin Windows se pueden revisar fuentes y documentacion, pero la interfaz y WASAPI se compilan y prueban en Windows. No se requiere WSL para el flujo normal de desarrollo.
 
-## Que Se Versiona
+### Qué se versiona
 
 Se incluyen fuentes, pruebas, CMake, scripts, documentacion, versiones de dependencias y `app/config/audioguia.example.json`. Los directorios de audio se conservan mediante archivos `.gitkeep`.
 
 No se incluyen herramientas, dependencias descargadas, compilaciones, ejecutables, ZIP, audios, preferencias locales ni capturas/logs generados. `.gitignore` los excluye sin borrarlos del disco. Cada computadora ejecuta el bootstrap para reconstruir su entorno y mantiene su propia configuracion. Los audios reales se copian por separado en las tres carpetas documentadas en [LEEME.md](LEEME.md).
 
-## Trabajo Entre Dos Computadoras
+### Trabajo entre dos computadoras
 
 Antes de empezar, con el trabajo anterior guardado:
 
@@ -58,7 +211,7 @@ git restore --staged .
 
 Esto conserva los archivos de trabajo. No usar Descartar todos, `git clean` ni `git reset --hard` para reducir la lista de archivos. Si `git pull --ff-only` informa que no puede avanzar, detenerse y revisar las ramas; no forzar el push.
 
-## Pruebas Y Distribucion
+### Pruebas y distribución
 
 ```powershell
 app\.tools\w64devkit\bin\ctest.exe --test-dir app\build\windows-x86-release --output-on-failure
@@ -69,7 +222,7 @@ El ZIP portable queda en `app/dist`. No se agrega al historial de Git: se puede 
 
 Si una politica de Windows bloquea algun test, `build.ps1 -SkipTests` permite compilar, pero no significa que las pruebas hayan pasado. No desactivar protecciones para ejecutarlo. Consultar [los resultados y limitaciones](app/docs/testing.md).
 
-## Documentacion
+## Más documentación
 
 - [Uso, carga de MP3 y mapa de los 14 puntos](LEEME.md).
 - [Compilacion y empaquetado detallados](app/README.md).

@@ -21,10 +21,10 @@ Audioguia/
   audio/
     0001-ESP/       Espanol:   0001.mp3 ... 0016.mp3
     0002-ENG/       Ingles:    0001.mp3 ... 0016.mp3
-    0003-PORR/      Portugues: 0001.mp3 ... 0016.mp3
+    0003-PORT/      Portugues: 0001.mp3 ... 0016.mp3
 ```
 
-`0003-PORR` es el nombre exacto solicitado. Conserve los cuatro digitos y la extension `.mp3`. Active la visualizacion de extensiones en el Explorador para evitar nombres como `0001.mp3.mp3`.
+La carpeta de portugues se llama `0003-PORT`. Conserve los cuatro digitos y la extension `.mp3`. Active la visualizacion de extensiones en el Explorador para evitar nombres como `0001.mp3.mp3`.
 
 La app no determina el punto por el orden de los archivos: utiliza el mapa explicito de `app/config/audioguia.json`. Si sus nombres son distintos, use **Configurar audios y salida**, seleccione un punto e idioma y pulse **Buscar archivo**. Los archivos deben estar dentro de `audio`.
 
@@ -50,7 +50,7 @@ La app no determina el punto por el orden de los archivos: utiliza el mapa expli
 ## Como Operar
 
 - **Simple:** un punto en el idioma seleccionado.
-- **Secuencial:** el mismo punto en espanol, ingles y portugues. No avanza por los demas puntos del recorrido.
+- **Secuencial:** el mismo punto en espanol, ingles y portugues. Si falta el archivo de un idioma, lo salta y reproduce el siguiente disponible. No avanza por los demas puntos del recorrido.
 - **Personalizado:** seleccione los idiomas y use Subir/Bajar para ordenar. El orden completo aparece en PREPARAR SIGUIENTE y se guarda antes de disparar un punto.
 - **Pausa entre idiomas:** se configura en Configurar audios y salida; valor inicial 1 segundo, rango 0-60 segundos.
 - **Otro punto:** cancela lo anterior y valida la secuencia nueva antes de empezar. No hay mezcla de voces.
@@ -74,7 +74,8 @@ Los atajos funcionan SOLO con foco en esta app. Un numpad comun no se aisla glob
 
 ## Errores Y Salida
 
-- Si falta un archivo o el decodificador no puede abrirlo, se informa punto, idioma y ruta. No se omite silenciosamente ningun idioma ni se inicia una secuencia parcial.
+- Si falta el archivo de un idioma, se omite tanto en Secuencial como en Personalizado. Por ejemplo, sin ingles se reproduce espanol y luego portugues, con una sola pausa entre ellos. Si no hay ningun archivo disponible (incluido Simple con su unico archivo ausente), se muestra un error. Los indices corresponden al orden seleccionado originalmente.
+- Un archivo presente pero invalido, un error de acceso o un fallo del decodificador detiene la reproduccion con punto, idioma y ruta.
 - El volumen de la app no modifica el volumen global de Windows.
 - En Configurar audios y salida puede elegir un dispositivo por su ID estable. Predeterminado se resuelve al comenzar cada secuencia y queda fijo durante esa secuencia.
 - Si desaparece la salida elegida, la reproduccion se detiene con error. Seleccione una salida disponible y dispare nuevamente; no hay cambio ni reanudacion automatica.
@@ -93,6 +94,6 @@ Los atajos funcionan SOLO con foco en esta app. Un numpad comun no se aisla glob
 7. Cambie entre completa y compacta durante reproduccion y pausa.
 8. Active otra aplicacion: el numpad no debe disparar esta audioguia; recuerde que escribira normalmente en esa otra aplicacion.
 9. Compruebe DOWN 1-6 y que DOWN 7/8 no interrumpan lo que esta sonando.
-10. Para ensayar un faltante, cierre la app y cambie temporalmente el nombre de un MP3. Compruebe el error y luego restaure su nombre.
+10. Para ensayar un faltante, cierre la app y cambie temporalmente el nombre de un MP3. En Secuencial o Personalizado compruebe que se salta ese idioma; en Simple, que se informa que no hay audio disponible. Luego restaure su nombre.
 
 El detalle de compilacion y validacion esta en `app/README.md` y `app/docs/testing.md`. Windows 7 SP1 y Windows 10 son objetivos previstos, no sistemas en los que se haya comprobado esta version.

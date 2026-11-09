@@ -30,7 +30,7 @@ if (!(Test-Path "$AppRoot/TolkeyenAudioguia.exe")) { throw 'Build the executable
 $Stamp = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
 $Stage = Join-Path $AppRoot "dist/stage-$Stamp/Audioguia"
 New-Item -ItemType Directory -Force "$Stage/app/config", "$Stage/app/docs" | Out-Null
-foreach ($Language in @('0001-ESP','0002-ENG','0003-PORR')) {
+foreach ($Language in @('0001-ESP','0002-ENG','0003-PORT')) {
     New-Item -ItemType Directory -Force "$Stage/audio/$Language" | Out-Null
 }
 Copy-Item "$AppRoot/TolkeyenAudioguia.exe" "$Stage/app/"

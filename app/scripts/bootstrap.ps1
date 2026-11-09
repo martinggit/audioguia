@@ -39,7 +39,7 @@ Fetch 'https://raw.githubusercontent.com/mackron/miniaudio/0.11.26/LICENSE' "$Ve
 Fetch 'https://github.com/nlohmann/json/releases/download/v3.12.0/json.hpp' "$Vendor/nlohmann/json.hpp" 'aaf127c04cb31c406e5b04a63f1ae89369fccde6d8fa7cdda1ed4f32dfc5de63'
 Fetch 'https://raw.githubusercontent.com/nlohmann/json/v3.12.0/LICENSE.MIT' "$Vendor/nlohmann/LICENSE.MIT" '46a65cffd1ea955132d95a8dd921640714a8d6b537d2e4e482d31145ae95b603'
 $Root = Split-Path $AppRoot -Parent
-foreach ($Language in @('0001-ESP','0002-ENG','0003-PORR')) {
+foreach ($Language in @('0001-ESP','0002-ENG','0003-PORT')) {
     New-Item -ItemType Directory -Force (Join-Path $Root "audio/$Language") | Out-Null
 }
 if (!(Test-Path "$AppRoot/config/audioguia.json")) {

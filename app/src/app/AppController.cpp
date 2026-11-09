@@ -107,9 +107,10 @@ std::string AppController::playback_detail() const {
     if (!active_ || active_->tracks.empty()) return "Sin reproduccion automatica";
     const auto index = std::min(state_.track_index, active_->tracks.size() - 1);
     auto text = label(active_->direction) + " | " + label(active_->mode) + " | ";
-    if (state_.between_languages && index + 1 < active_->tracks.size()) {
-        text += "Entre idiomas. Siguiente: " + label(active_->tracks[index + 1].language);
-        text += " | " + std::to_string(index + 2);
+    const auto next = state_.next_track_index.value_or(index + 1);
+    if (state_.between_languages && next < active_->tracks.size()) {
+        text += "Entre idiomas. Siguiente: " + label(active_->tracks[next].language);
+        text += " | " + std::to_string(next + 1);
     } else {
         text += label(active_->tracks[index].language) + " | " + std::to_string(index + 1);
     }

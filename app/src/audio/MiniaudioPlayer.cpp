@@ -393,7 +393,9 @@ struct MiniaudioPlayer::Impl {
     void post(PlaybackStatus status, bool between = false, std::string message = {}) {
         std::lock_guard<std::mutex> lock(mutex_);
         if (!quitting_ && current()) {
-            events_.push_back({session_, status, track_index_, between, std::move(message)});
+            events_.push_back({session_, status, track_index_, between, std::move(message),
+                              between ? std::optional<std::size_t>{next_available(track_index_ + 1)}
+                                      : std::nullopt});
         }
     }
 
@@ -457,7 +459,13 @@ struct MiniaudioPlayer::Impl {
         return entries;
     }
 
+    std::size_t next_available(std::size_t start) const {
+        while (start < available_.size() && !available_[start]) ++start;
+        return start;
+    }
+
     bool preflight() {
+        available_.assign(plan_.tracks.size(), false);
         for (track_index_ = 0; track_index_ < plan_.tracks.size(); ++track_index_) {
             if (!current()) {
                 return false;
@@ -465,8 +473,11 @@ struct MiniaudioPlayer::Impl {
             const auto& path = plan_.tracks[track_index_].path;
             std::error_code error;
             const auto status = std::filesystem::status(path, error);
-            if (error || !std::filesystem::exists(status) ||
-                !std::filesystem::is_regular_file(status)) {
+            if (error == std::errc::no_such_file_or_directory ||
+                (!error && !std::filesystem::exists(status))) {
+                continue;
+            }
+            if (error || !std::filesystem::is_regular_file(status)) {
                 throw AppError("El archivo no existe o no es un archivo regular" +
                                (error ? ": " + error.message() : std::string{}));
             }
@@ -488,8 +499,13 @@ struct MiniaudioPlayer::Impl {
             require_success("ma_decoder_seek_to_pcm_frame(preflight)",
                             ma_decoder_seek_to_pcm_frame(&probe.value, 0));
             require_success("ma_decoder_uninit(preflight)", probe.close());
+            available_[track_index_] = true;
         }
-        track_index_ = 0;
+        track_index_ = next_available(0);
+        if (track_index_ == plan_.tracks.size()) {
+            track_index_ = 0; // Retain point/language/path context in the error.
+            throw AppError("No hay audios disponibles para los idiomas seleccionados");
+        }
         return current();
     }
 
@@ -664,7 +680,7 @@ struct MiniaudioPlayer::Impl {
                 return;
             }
             require_success("ma_decoder_uninit", decoder_.close());
-            if (track_index_ + 1 < plan_.tracks.size()) {
+            if (next_available(track_index_ + 1) < plan_.tracks.size()) {
                 phase_ = Phase::gap;
                 deadline_ = Clock::now() + std::chrono::milliseconds{plan_.gap_ms};
                 post(PlaybackStatus::playing, true);
@@ -675,7 +691,7 @@ struct MiniaudioPlayer::Impl {
                 deadline_ = Clock::now() + tail_duration();
             }
         } else if (phase_ == Phase::gap && Clock::now() >= deadline_) {
-            ++track_index_;
+            track_index_ = next_available(track_index_ + 1);
             phase_ = Phase::track;
             if (!prepare_track() || !current()) {
                 return;
@@ -926,6 +942,7 @@ struct MiniaudioPlayer::Impl {
     std::uint32_t render_generation_{0};
     std::uint64_t session_{0};
     PlaybackPlan plan_;
+    std::vector<bool> available_;
     std::size_t track_index_{0};
     Phase phase_{Phase::idle};
     float volume_{1.0F};

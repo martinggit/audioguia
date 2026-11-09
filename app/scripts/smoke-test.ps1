@@ -98,7 +98,7 @@ public static class AudioguiaSmoke {
 '@
 [void][AudioguiaSmoke]::SetProcessDPIAware()
 
-foreach ($entry in @(@('es','0001-ESP',350),@('en','0002-ENG',440),@('pt','0003-PORR',550))) {
+foreach ($entry in @(@('es','0001-ESP',350),@('en','0002-ENG',440),@('pt','0003-PORT',550))) {
     New-Item -ItemType Directory -Force "$Fixture/audio/$($entry[1])" | Out-Null
     $relative = if ($NoAudio) { "audio/$($entry[1])/TEST_MISSING.wav" } else { "audio/$($entry[1])/TEST_ONLY.wav" }
     if (!$NoAudio) { [AudioguiaSmoke]::Wave("$Fixture/$relative", $entry[2]) }

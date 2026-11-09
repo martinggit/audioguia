@@ -257,7 +257,7 @@ void replacement_and_snapshots() {
     check(old_session > 0 && fake.plays.front().session == old_session, "Session was not forwarded");
     check(old_plan.mode == Mode::custom && old_plan.direction == Direction::up && old_plan.gap_ms == 321 &&
           old_plan.tracks.size() == 2 && old_plan.tracks[0].language == Language::pt &&
-          old_plan.tracks[0].path == fixture.temporary.root / "audio/0003-PORR/0002.mp3" &&
+          old_plan.tracks[0].path == fixture.temporary.root / "audio/0003-PORT/0002.mp3" &&
           old_plan.tracks[1].language == Language::en, "Initial plan mode/languages/gap/path incorrect");
     check_plan(fake.plays.front().plan, old_plan);
     fake.pending = {{old_session, PlaybackStatus::paused, 0, true, "paused old gap"}};
@@ -310,7 +310,7 @@ void stale_events_and_poll_order() {
     const auto current_session = app.state().session;
     check(current_session > old_session, "New play must advance the session");
     const auto plan = app.active_plan().value();
-    const AudioEvent current{current_session, PlaybackStatus::playing, 1, true, "current gap"};
+    const AudioEvent current{current_session, PlaybackStatus::playing, 0, true, "current gap", 2};
     fake.pending = {{old_session, PlaybackStatus::error, 2, false, "old error"}, current,
                     {old_session, PlaybackStatus::stopped, 0, false, "old stopped"},
                     {current_session + 1, PlaybackStatus::error, 0, false, "unrequested future session"}};

@@ -115,7 +115,7 @@ AppConfig default_config() {
         point.audio = {
             {Language::es, std::filesystem::u8path("audio/0001-ESP") / entry.file},
             {Language::en, std::filesystem::u8path("audio/0002-ENG") / entry.file},
-            {Language::pt, std::filesystem::u8path("audio/0003-PORR") / entry.file},
+            {Language::pt, std::filesystem::u8path("audio/0003-PORT") / entry.file},
         };
         config.points.push_back(std::move(point));
     }

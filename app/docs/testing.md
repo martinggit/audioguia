@@ -30,6 +30,14 @@ La aplicacion usa controles Windows reales, no una replica pixel por pixel del d
 
 ## Limitaciones Pendientes
 
+### Cambio posterior: omision de idiomas sin archivo (2026-11-09)
+
+Se recompilo el ejecutable Windows x86 y pasaron las cuatro suites CTest (core, controller, keyboard y audio). La suite de audio incorpora una regresion para archivos ausentes al principio, en medio y al final de una secuencia, y para todos los idiomas ausentes. Comprueba orden e indices originales y el siguiente idioma anunciado durante el intervalo. La prueba de fallo previo al inicio ahora utiliza un MP3 presente pero invalido. El controlador comprueba que un intervalo puede anunciar portugues directamente despues de espanol.
+
+Esta validacion usa el backend null en las pruebas del motor; no es una nueva prueba de escucha con los MP3 operativos ni una nueva ejecucion del smoke test. Los resultados anteriores describen la version previa, que rechazaba cualquier faltante.
+
+### Validaciones de plataforma y hardware
+
 - Windows 7 SP1 de 32 bits: compatibilidad prevista, NO ejecutada ni comprobada.
 - Windows 10: compatibilidad prevista, NO ejecutada ni comprobada.
 - Cuenta estandar y maquina totalmente limpia: pendientes. El manifiesto es asInvoker y no solicita elevacion, pero las pruebas actuales heredaron el contexto del entorno de desarrollo.

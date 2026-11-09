@@ -44,7 +44,7 @@ namespace {
 
 namespace fs = std::filesystem;
 constexpr std::array<Language, 3> languages{Language::es, Language::en, Language::pt};
-constexpr std::array<const char*, 3> language_folders{"0001-ESP", "0002-ENG", "0003-PORR"};
+constexpr std::array<const char*, 3> language_folders{"0001-ESP", "0002-ENG", "0003-PORT"};
 
 wxString utf8(const std::string& text) {
     return wxString::FromUTF8(text.c_str());
@@ -287,7 +287,7 @@ PreferencesDialog::PreferencesDialog(AppController& controller, wxWindow* parent
     auto* external_help = new wxStaticText(scroll, wxID_ANY, wxString::FromUTF8(
         u8"Solo se seleccionan archivos existentes dentro de audio/. Esta ventana no copia ni sobrescribe.\n"
         u8"Si el archivo es externo, col\u00f3quelo primero en la carpeta del idioma con un nombre nuevo:\n"
-        u8"Espa\u00f1ol: audio/0001-ESP | Ingl\u00e9s: audio/0002-ENG | Portugu\u00e9s: audio/0003-PORR.\n"
+        u8"Espa\u00f1ol: audio/0001-ESP | Ingl\u00e9s: audio/0002-ENG | Portugu\u00e9s: audio/0003-PORT.\n"
         u8"Las rutas ya configuradas se conservan; no se renombran ni se sustituyen archivos ausentes."));
     content->Add(external_help, 0, wxBOTTOM, FromDIP(10));
     auto* padding = new wxBoxSizer(wxVERTICAL);

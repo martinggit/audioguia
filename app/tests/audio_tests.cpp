@@ -477,19 +477,19 @@ void replace_during_gap(const Fixtures& fixture) {
     }
 }
 
-void preflight_last_missing_and_failed_replacement(const Fixtures& fixture) {
+void preflight_last_invalid_and_failed_replacement(const Fixtures& fixture) {
     MiniaudioPlayer player(true);
     EventLog log(player);
     auto plan = sequence(fixture, 100);
-    plan.point_id = "missing-last-point";
-    plan.tracks.back().path = fixture.missing;
+    plan.point_id = "invalid-last-point";
+    plan.tracks.back().path = fixture.invalid_mp3;
     player.play(70, plan, {}, 0.5F);
     auto error = log.status(70, PlaybackStatus::error);
     check(error.event.track_index == 2 && !error.event.between_languages,
           "Preflight error must identify the failing last track");
     check(error.event.message.find(plan.point_id) != std::string::npos &&
           error.event.message.find("lengua=pt") != std::string::npos &&
-          error.event.message.find(fixture.missing.u8string()) != std::string::npos,
+          error.event.message.find(fixture.invalid_mp3.u8string()) != std::string::npos,
           "Error must contain point, language and UTF-8 path");
     log.no_playing(0);
 
@@ -504,6 +504,43 @@ void preflight_last_missing_and_failed_replacement(const Fixtures& fixture) {
     log.collect(300ms);
     log.no_playing(from);
     log.only_session(71, from);
+}
+
+void skip_missing_languages(const Fixtures& fixture) {
+    MiniaudioPlayer player(true);
+    EventLog log(player);
+    for (std::size_t missing = 0; missing < 3; ++missing) {
+        const auto from = log.items.size();
+        auto plan = sequence(fixture, 50);
+        plan.tracks[missing].path = fixture.missing;
+        const auto session = 200 + missing;
+        player.play(session, plan, {}, 0.5F);
+        log.status(session, PlaybackStatus::stopped, from);
+        std::vector<std::size_t> played;
+        for (std::size_t i = from; i < log.items.size(); ++i) {
+            const auto& event = log.items[i].event;
+            if (event.status != PlaybackStatus::playing) continue;
+            check(event.track_index != missing, "Missing language was played");
+            if (event.between_languages) {
+                check(event.next_track_index && *event.next_track_index != missing,
+                      "Gap announces a missing language");
+            } else {
+                played.push_back(event.track_index);
+            }
+        }
+        std::vector<std::size_t> expected;
+        for (std::size_t i = 0; i < 3; ++i) if (i != missing) expected.push_back(i);
+        check(played == expected, "Available languages must play in original order");
+    }
+    log.no_error();
+    const auto from = log.items.size();
+    auto plan = sequence(fixture, 50);
+    for (auto& track : plan.tracks) track.path = fixture.missing;
+    player.play(203, plan, {}, 0.5F);
+    const auto error = log.status(203, PlaybackStatus::error, from);
+    check(error.event.message.find("No hay audios disponibles") != std::string::npos,
+          "All missing languages must report a clear error");
+    log.no_playing(from);
 }
 
 void invalid_files_and_first_frame(const Fixtures& fixture) {
@@ -696,7 +733,8 @@ int main() {
             {"pause and resume remaining gap", pause_and_resume_gap},
             {"replace point and discard stale events", replace_point_and_discard_stale_events},
             {"replace during gap", replace_during_gap},
-            {"last missing file and failed same-ID replacement", preflight_last_missing_and_failed_replacement},
+            {"last invalid file and failed same-ID replacement", preflight_last_invalid_and_failed_replacement},
+            {"skip missing first, middle, last and all languages", skip_missing_languages},
             {"invalid WAV/MP3, first frame and regular file", invalid_files_and_first_frame},
             {"Unicode paths and UTF-8 errors", unicode_paths},
             {"volume validation", volume_validation},

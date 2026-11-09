@@ -1,5 +1,6 @@
 #pragma once
 #include "domain/Models.h"
+#include <optional>
 #include <vector>
 
 namespace audioguia {
@@ -15,6 +16,7 @@ struct AudioEvent {
     std::size_t track_index{0};
     bool between_languages{false};
     std::string message;
+    std::optional<std::size_t> next_track_index{};
 };
 
 class IAudioPlayer {

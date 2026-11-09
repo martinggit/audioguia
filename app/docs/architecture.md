@@ -13,9 +13,9 @@
 
 El plan contiene punto, direccion, modo, idiomas ordenados, rutas resueltas y pausa. Cambiar las preferencias no lo modifica. Play y Stop invalidan comandos y eventos antiguos por generacion. El controlador tambien descarta eventos de otras sesiones.
 
-Antes de iniciar se comprueban todos los archivos seleccionados: archivo regular, apertura del decoder, primer marco y seek. No se promete una auditoria completa de corrupcion de cada MP3: fallos tardios reportados por el decoder detienen la reproduccion, y ciertos danos pueden parecer EOF al propio decoder.
+Antes de iniciar se comprueban los archivos seleccionados: los inexistentes se omiten; los presentes deben ser archivos regulares y superar apertura del decoder, primer marco y seek. Si ninguno existe, se informa error. Se conservan los indices del plan original y los eventos de intervalo incluyen el indice real del siguiente idioma disponible. No se promete una auditoria completa de corrupcion de cada MP3: fallos tardios reportados por el decoder detienen la reproduccion, y ciertos danos pueden parecer EOF al propio decoder.
 
-Una pulsacion nueva cancela lo anterior ANTES de validar lo nuevo. Si falta el archivo, queda en error y no retoma lo anterior. DOWN 7/8 no cambian ni cancelan nada. Stop cancela tambien el intervalo entre idiomas. Pausar conserva PCM y tiempo restante del intervalo. El vaciado final deja un margen al buffer del dispositivo para no cortar la cola del sonido.
+Una pulsacion nueva cancela lo anterior ANTES de validar lo nuevo. Si no hay archivos disponibles o uno presente es invalido, queda en error y no retoma lo anterior. DOWN 7/8 no cambian ni cancelan nada. Stop cancela tambien el intervalo entre idiomas. Pausar conserva PCM y tiempo restante del intervalo. El vaciado final deja un margen al buffer del dispositivo para no cortar la cola del sonido.
 
 ## Salida Y Concurrencia
 
@@ -37,7 +37,7 @@ Un JSON invalido produce aviso y valores por defecto SOLO en memoria, con guarda
 
 - 14 puntos fijos; nombres y asociaciones editables, IDs y numeros estables.
 - UP 0001-0008 y DOWN 0009-0014 como mapa inicial; 0015/0016 reservados.
-- Tres idiomas: es, en y pt; nombre fisico portugues 0003-PORR.
+- Tres idiomas: es, en y pt; nombre fisico portugues 0003-PORT.
 - Un intervalo comun de 0-60000 ms, inicialmente 1000 ms.
 - Configuracion personalizada persistida antes de disparar, nunca un dialogo por punto.
 - Al abrir se muestra siempre la vista completa, sin autoplay; la compacta recuerda posicion y siempre visible.
