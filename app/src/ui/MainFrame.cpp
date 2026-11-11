@@ -338,7 +338,7 @@ MainFrame::MainFrame(AppController& controller)
     };
     add_choice("Modo (*)", mode_);
     for (const auto mode : modes) mode_->Append(utf8(label(mode)));
-    add_choice("Idioma", language_);
+    add_choice("Idioma (.)", language_);
     for (const auto language : languages) language_->Append(utf8(label(language)));
     sequence_button_ = new wxButton(setup, wxID_ANY, "Editar idiomas...");
     sequence_button_->SetMinSize(FromDIP(wxSize(-1, 34)));

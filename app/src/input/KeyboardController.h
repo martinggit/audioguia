@@ -6,7 +6,7 @@ namespace audioguia {
 class AppController;
 class MainFrame;
 
-enum class KeyboardAction { none, point, stop, pause, direction, mode, volume_up, volume_down };
+enum class KeyboardAction { none, point, stop, pause, direction, mode, volume_up, volume_down, language };
 enum class NumpadOperator { none, divide, multiply, add, subtract };
 struct KeyboardCommand {
     KeyboardAction action{KeyboardAction::none};
@@ -21,10 +21,14 @@ struct KeyPress {
     bool app_has_focus{true};
     bool modified{false};
     NumpadOperator operation{NumpadOperator::none};
+    bool numpad_decimal{false};
+    Mode mode{Mode::simple};
 };
 
 inline KeyboardCommand translate_key(const KeyboardBindings& bindings, const KeyPress& key) {
     if (!key.app_has_focus || key.editing || key.modified || key.repeat) return {};
+    if (key.numpad_decimal && key.num_lock && key.mode == Mode::simple)
+        return {KeyboardAction::language, 0};
     switch (key.operation) {
     case NumpadOperator::divide: return {KeyboardAction::direction, 0};
     case NumpadOperator::multiply: return {KeyboardAction::mode, 0};

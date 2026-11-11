@@ -72,7 +72,9 @@ La app no determina el punto por el orden de los archivos: utiliza el mapa expli
 7. `*` del numpad alterna Simple, Secuencial y Personalizado para el siguiente punto.
 8. `+` y `-` del numpad ajustan el volumen en pasos del 5 %, entre 0 y 100 %, incluso durante la reproduccion.
 
-La tecla decimal no tiene un atajo asignado. Los operadores `/`, `*`, `+` y `-` funcionan tambien con Bloq Num apagado; los digitos requieren Bloq Num activado.
+9. La tecla decimal del numpad alterna ESP, ENG y PORT solo en modo Simple, con Bloq Num activado. Prepara el siguiente punto sin modificar el audio actual; en Secuencial y Personalizado no cambia el idioma.
+
+Los operadores `/`, `*`, `+` y `-` funcionan tambien con Bloq Num apagado; los digitos y la tecla decimal requieren Bloq Num activado.
 
 Las repeticiones al mantener una tecla se ignoran. Los atajos se suspenden en el dialogo de configuracion y cuando se edita un selector, secuencia o volumen. La asignacion numerica se puede cambiar en `preferences.keyboard` del JSON con la app cerrada; no se admiten colisiones.
 

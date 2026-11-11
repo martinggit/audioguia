@@ -32,6 +32,9 @@ bool KeyboardController::handle_native_message(void* message) {
     if (!main_active || main_.input_suspended() ||
         ::GetAncestor(native.hwnd, GA_ROOT) != foreground) return false;
     KeyPress key;
+    key.mode = controller_.config().preferences.mode;
+    // Match the numeric keypad key, not punctuation on the main keyboard.
+    key.numpad_decimal = native.wParam == VK_DECIMAL || native.wParam == VK_SEPARATOR;
     switch (native.wParam) {
     case VK_DIVIDE: key.operation = NumpadOperator::divide; break;
     case VK_MULTIPLY: key.operation = NumpadOperator::multiply; break;
@@ -61,6 +64,7 @@ bool KeyboardController::handle_native_message(void* message) {
     case KeyboardAction::pause: controller_.toggle_pause(); break;
     case KeyboardAction::direction:
     case KeyboardAction::mode:
+    case KeyboardAction::language:
     case KeyboardAction::volume_up:
     case KeyboardAction::volume_down: {
         auto preferences = controller_.config().preferences;
@@ -69,6 +73,9 @@ bool KeyboardController::handle_native_message(void* message) {
         } else if (command.action == KeyboardAction::mode) {
             preferences.mode = preferences.mode == Mode::simple ? Mode::sequential
                 : preferences.mode == Mode::sequential ? Mode::custom : Mode::simple;
+        } else if (command.action == KeyboardAction::language) {
+            preferences.simple_language = preferences.simple_language == Language::es ? Language::en
+                : preferences.simple_language == Language::en ? Language::pt : Language::es;
         } else {
             const float delta = command.action == KeyboardAction::volume_up ? 0.05F : -0.05F;
             preferences.volume = std::clamp(preferences.volume + delta, 0.0F, 1.0F);

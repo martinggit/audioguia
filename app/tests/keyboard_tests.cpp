@@ -73,6 +73,24 @@ int main() {
             key.modified = true;
             check(translate_key(bindings, key).action == KeyboardAction::none);
         }
+        KeyPress decimal;
+        decimal.numpad_decimal = true;
+        check(translate_key(bindings, decimal).action == KeyboardAction::language);
+        for (const auto mode : {Mode::sequential, Mode::custom}) {
+            decimal.mode = mode;
+            check(translate_key(bindings, decimal).action == KeyboardAction::none);
+        }
+        decimal.mode = Mode::simple;
+        for (int guard = 0; guard < 5; ++guard) {
+            auto blocked = decimal;
+            if (guard == 0) blocked.num_lock = false;
+            if (guard == 1) blocked.repeat = true;
+            if (guard == 2) blocked.editing = true;
+            if (guard == 3) blocked.app_has_focus = false;
+            if (guard == 4) blocked.modified = true;
+            check(translate_key(bindings, blocked).action == KeyboardAction::none);
+        }
+        check(translate_key(bindings, KeyPress{}).action == KeyboardAction::none);
         std::cout << "keyboard_tests: " << checks << " checks passed\n";
         return 0;
     } catch (const std::exception& error) {
