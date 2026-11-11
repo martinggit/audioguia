@@ -20,7 +20,6 @@ public:
     void poll();
     void apply_config(AppConfig config);
     void set_preferences(Preferences preferences);
-    void remember_compact_position(int x, int y);
     std::vector<OutputDevice> devices();
     std::string selection_text() const;
     std::string playback_title() const;

@@ -43,6 +43,7 @@ struct Preferences {
     float volume{0.75F};
     std::string output_device;
     KeyboardBindings keyboard;
+    // Legacy schema-1 fields: retained for configuration compatibility only.
     int compact_x{-1};
     int compact_y{-1};
     bool always_on_top{false};

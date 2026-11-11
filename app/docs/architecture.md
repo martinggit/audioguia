@@ -44,8 +44,8 @@ Un JSON invalido produce aviso y valores por defecto SOLO en memoria, con guarda
 - Tres idiomas: es, en y pt; nombre fisico portugues 0003-PORT.
 - Un intervalo comun de 0-60000 ms, inicialmente 1000 ms.
 - Configuracion personalizada persistida antes de disparar, nunca un dialogo por punto.
-- Al abrir se muestra siempre la vista completa, sin autoplay; la compacta recuerda posicion y siempre visible.
-- Cerrar la compacta vuelve a la completa; cerrar la completa termina la app y el audio.
+- Al abrir se muestra la unica ventana de operacion, sin autoplay. Cerrar esta ventana termina la app y el audio.
+- Los campos antiguos compact_x, compact_y y always_on_top se conservan en el esquema JSON por compatibilidad, sin efecto en la interfaz.
 - Bloq Num se consulta, nunca se cambia. Enter del numpad funciona tambien con Bloq Num apagado; los digitos no.
 
 La primera version no tiene reproduccion de puntos por GPS, integracion WT2008, acceso global al teclado, actualizador ni instalador.

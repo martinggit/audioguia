@@ -4,7 +4,6 @@
 
 #include <wx/frame.h>
 
-#include <functional>
 #include <string>
 #include <vector>
 
@@ -24,7 +23,7 @@ class PlaybackButton;
 
 class MainFrame final : public wxFrame {
 public:
-    MainFrame(AppController& controller, std::function<void()> on_compact);
+    explicit MainFrame(AppController& controller);
     void refresh_state();
     void focus_transport();
     // The application's input controller must also respect native modal disabling.
@@ -46,7 +45,6 @@ private:
     void play_point(Direction direction, int number);
 
     AppController& controller_;
-    std::function<void()> on_compact_;
     wxToggleButton* up_{nullptr};
     wxToggleButton* down_{nullptr};
     wxPanel* up_points_{nullptr};
@@ -56,9 +54,7 @@ private:
     wxChoice* language_{nullptr};
     wxButton* sequence_button_{nullptr};
     wxStaticText* prepare_{nullptr};
-    wxStaticText* playing_title_{nullptr};
     wxStaticText* playing_detail_{nullptr};
-    wxStaticText* status_{nullptr};
     wxStaticText* volume_label_{nullptr};
     wxStaticText* keyboard_status_{nullptr};
     wxTextCtrl* feedback_{nullptr};

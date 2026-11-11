@@ -8,6 +8,10 @@
 #include <wx/button.h>
 #include <wx/choice.h>
 #include <wx/dcmemory.h>
+#include <wx/image.h>
+#include <wx/imagpng.h>
+#include <wx/mstream.h>
+#include <wx/statbmp.h>
 #include <wx/dialog.h>
 #include <wx/display.h>
 #include <wx/panel.h>
@@ -42,18 +46,56 @@ public:
         : wxButton(parent, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxBU_LEFT) {
 #ifdef _WIN32
         MakeOwnerDrawn();
+        SetDoubleBuffered(true);
+        // The buffered owner draw covers the background as well as the content.
+        Bind(wxEVT_ERASE_BACKGROUND, [](wxEraseEvent&) {});
 #endif
     }
     void set_progress(bool visible, int value) {
         value = std::clamp(value, 0, 1000);
+        if (!visible) value = 0;
         if (visible_ != visible || value_ != value) {
             visible_ = visible;
             value_ = value;
-            Refresh(false);
+            RefreshRect(wxRect(FromDIP(8), GetClientSize().y - FromDIP(8),
+                               std::max(0, GetClientSize().x - FromDIP(16)), FromDIP(5)), false);
         }
     }
 #ifdef _WIN32
     bool MSWOnDraw(WXDRAWITEMSTRUCT* item) override {
+        const auto& target = *reinterpret_cast<DRAWITEMSTRUCT*>(item);
+        const int width = target.rcItem.right - target.rcItem.left;
+        const int height = target.rcItem.bottom - target.rcItem.top;
+        if (width <= 0 || height <= 0) return false;
+        const auto dc = ::CreateCompatibleDC(target.hDC);
+        const auto bitmap = ::CreateCompatibleBitmap(target.hDC, width, height);
+        if (!dc || !bitmap) {
+            if (bitmap) ::DeleteObject(bitmap);
+            if (dc) ::DeleteDC(dc);
+            return draw_content(item);
+        }
+        const auto previous = ::SelectObject(dc, bitmap);
+        const auto previous_font = ::SelectObject(dc, ::GetCurrentObject(target.hDC, OBJ_FONT));
+        ::SetTextColor(dc, ::GetTextColor(target.hDC));
+        ::SetBkColor(dc, ::GetBkColor(target.hDC));
+        ::SetBkMode(dc, ::GetBkMode(target.hDC));
+        ::SetWindowOrgEx(dc, target.rcItem.left, target.rcItem.top, nullptr);
+        auto buffered = target;
+        buffered.hDC = dc;
+        const auto colour = GetBackgroundColour();
+        const auto background = ::CreateSolidBrush(RGB(colour.Red(), colour.Green(), colour.Blue()));
+        ::FillRect(dc, &buffered.rcItem, background);
+        ::DeleteObject(background);
+        const bool drawn = draw_content(reinterpret_cast<WXDRAWITEMSTRUCT*>(&buffered));
+        if (drawn) ::BitBlt(target.hDC, target.rcItem.left, target.rcItem.top, width, height,
+                           dc, target.rcItem.left, target.rcItem.top, SRCCOPY);
+        ::SelectObject(dc, previous_font);
+        ::SelectObject(dc, previous);
+        ::DeleteObject(bitmap);
+        ::DeleteDC(dc);
+        return drawn;
+    }
+    bool draw_content(WXDRAWITEMSTRUCT* item) {
         const bool drawn = wxButton::MSWOnDraw(item);
         if (!drawn || !visible_) return drawn;
         const auto& native = *reinterpret_cast<DRAWITEMSTRUCT*>(item);
@@ -162,9 +204,9 @@ private:
 
 } // namespace
 
-MainFrame::MainFrame(AppController& controller, std::function<void()> on_compact)
+MainFrame::MainFrame(AppController& controller)
     : wxFrame(nullptr, wxID_ANY, wxString::FromUTF8(u8"Tolkeyen Patagonia Turismo | Audiogu\u00eda")),
-      controller_(controller), on_compact_(std::move(on_compact)) {
+      controller_(controller) {
     auto font = GetFont();
     font.SetPointSize(std::max(11, font.GetPointSize()));
     SetFont(font);
@@ -176,22 +218,30 @@ MainFrame::MainFrame(AppController& controller, std::function<void()> on_compact
     transport->SetForegroundColour(*wxWHITE);
     auto* playback = new wxBoxSizer(wxVERTICAL);
     auto* heading = new wxBoxSizer(wxHORIZONTAL);
-    auto* brand = new wxStaticText(transport, wxID_ANY, "TOLKEYEN  /  AUDIOGUIA");
-    brand->SetForegroundColour(wxColour(180, 207, 229));
-    heading->Add(brand, 1, wxALIGN_CENTER_VERTICAL);
-    status_ = line(transport, 25);
-    status_->SetMinSize(FromDIP(wxSize(230, 25)));
-    status_->SetFont(font.Bold());
-    heading->Add(status_, 0, wxEXPAND);
-    playback->Add(heading, 0, wxEXPAND | wxBOTTOM, FromDIP(6));
-    auto* now = new wxBoxSizer(wxHORIZONTAL);
-    auto* description = new wxBoxSizer(wxVERTICAL);
-    playing_title_ = line(transport, 34);
-    playing_title_->SetFont(font.Bold().Larger());
+    wxImage logo;
+#ifdef _WIN32
+    const auto module = ::GetModuleHandleW(nullptr);
+    const auto resource = ::FindResourceW(module, MAKEINTRESOURCEW(101), RT_RCDATA);
+    if (resource) {
+        const auto data = ::LoadResource(module, resource);
+        wxMemoryInputStream stream(::LockResource(data), ::SizeofResource(module, resource));
+        wxPNGHandler handler;
+        handler.LoadFile(&logo, stream);
+    }
+#endif
+    if (logo.IsOk()) {
+        const int width = FromDIP(240);
+        const int height = width * logo.GetHeight() / logo.GetWidth();
+        auto* brand = new wxStaticBitmap(transport, wxID_ANY,
+            wxBitmap(logo.Scale(width, height, wxIMAGE_QUALITY_HIGH)));
+        brand->SetName("Tolkeyen Patagonia Turismo");
+        heading->Add(brand, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(20));
+    }
     playing_detail_ = line(transport, 25);
-    description->Add(playing_title_, 0, wxEXPAND);
-    description->Add(playing_detail_, 0, wxEXPAND);
-    now->Add(description, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(12));
+    auto* playback_controls = new wxBoxSizer(wxVERTICAL);
+    playback_controls->Add(playing_detail_, 0, wxEXPAND | wxBOTTOM, FromDIP(6));
+    auto* now = new wxBoxSizer(wxHORIZONTAL);
+    now->AddStretchSpacer();
     pause_ = new wxButton(transport, wxID_ANY, "ENTER  |  Pausar");
     stop_ = new wxButton(transport, wxID_ANY, "0  |  Detener");
     pause_->SetBackgroundColour(wxColour(226, 236, 245));
@@ -202,7 +252,9 @@ MainFrame::MainFrame(AppController& controller, std::function<void()> on_compact
         button->SetFont(font.Bold());
         now->Add(button, 0, wxLEFT, FromDIP(8));
     }
-    playback->Add(now, 0, wxEXPAND);
+    playback_controls->Add(now, 0, wxEXPAND);
+    heading->Add(playback_controls, 1, wxALIGN_CENTER_VERTICAL);
+    playback->Add(heading, 0, wxEXPAND);
     feedback_ = new wxTextCtrl(transport, wxID_ANY, wxEmptyString, wxDefaultPosition,
                                wxDefaultSize, wxTE_READONLY | wxTE_MULTILINE | wxBORDER_NONE);
     feedback_->SetMinSize(FromDIP(wxSize(0, 42)));
@@ -223,15 +275,15 @@ MainFrame::MainFrame(AppController& controller, std::function<void()> on_compact
     scroll_->SetBackgroundColour(surface);
     auto* content = new wxBoxSizer(wxVERTICAL);
     auto* direction_row = new wxBoxSizer(wxHORIZONTAL);
-    up_ = new wxToggleButton(scroll_, wxID_ANY, "UP | 8 puntos");
-    down_ = new wxToggleButton(scroll_, wxID_ANY, "DOWN | 6 puntos");
+    up_ = new wxToggleButton(scroll_, wxID_ANY, "UP");
+    down_ = new wxToggleButton(scroll_, wxID_ANY, "DOWN");
     for (auto* button : {up_, down_}) {
         button->SetMinSize(FromDIP(wxSize(175, 44)));
         button->SetFont(font.Bold());
         direction_row->Add(button, 0, wxRIGHT, FromDIP(8));
     }
     auto* hint = line(scroll_);
-    set_label(hint, "Una tecla o un clic reproduce el punto");
+    set_label(hint, "Numero o clic para reproducir");
     hint->SetForegroundColour(ink);
     direction_row->Add(hint, 1, wxALIGN_CENTER_VERTICAL | wxLEFT, FromDIP(8));
     content->Add(direction_row, 0, wxEXPAND | wxBOTTOM, FromDIP(10));
@@ -284,7 +336,7 @@ MainFrame::MainFrame(AppController& controller, std::function<void()> on_compact
         choice->SetName(title);
         selectors->Add(choice, 1, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(12));
     };
-    add_choice("Modo", mode_);
+    add_choice("Modo (*)", mode_);
     for (const auto mode : modes) mode_->Append(utf8(label(mode)));
     add_choice("Idioma", language_);
     for (const auto language : languages) language_->Append(utf8(label(language)));
@@ -293,7 +345,7 @@ MainFrame::MainFrame(AppController& controller, std::function<void()> on_compact
     selectors->Add(sequence_button_, 0, wxALIGN_CENTER_VERTICAL);
     setup_layout->Add(selectors, 0, wxEXPAND | wxBOTTOM, FromDIP(8));
     auto* tools = new wxBoxSizer(wxHORIZONTAL);
-    tools->Add(new wxStaticText(setup, wxID_ANY, "Volumen"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(6));
+    tools->Add(new wxStaticText(setup, wxID_ANY, "Volumen (- / +)"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, FromDIP(6));
     volume_ = new wxSlider(setup, wxID_ANY, 75, 0, 100);
     volume_->SetMinSize(FromDIP(wxSize(90, 32)));
     volume_->SetName("Volumen de 0 a 100");
@@ -301,9 +353,8 @@ MainFrame::MainFrame(AppController& controller, std::function<void()> on_compact
     volume_label_ = line(setup);
     volume_label_->SetMinSize(FromDIP(wxSize(48, 24)));
     tools->Add(volume_label_, 0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, FromDIP(8));
-    auto* compact = new wxButton(setup, wxID_ANY, "Vista compacta");
     auto* settings = new wxButton(setup, wxID_ANY, "Configurar audios y salida");
-    for (auto* button : {compact, settings}) {
+    for (auto* button : {settings}) {
         button->SetMinSize(FromDIP(wxSize(-1, 34)));
         tools->Add(button, 0, wxLEFT, FromDIP(8));
     }
@@ -358,7 +409,6 @@ MainFrame::MainFrame(AppController& controller, std::function<void()> on_compact
         change_preferences(std::move(preferences));
     });
     ready->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { focus_transport(); });
-    compact->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { if (on_compact_) on_compact_(); });
     settings->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { open_preferences(); });
     sequence_button_->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { edit_sequence(); });
     pause_->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
@@ -440,8 +490,9 @@ void MainFrame::edit_sequence() {
 void MainFrame::refresh_state() {
     const auto& preferences = controller_.config().preferences;
     const bool up = preferences.direction == Direction::up;
-    up_->SetValue(up);
-    down_->SetValue(!up);
+    // SetValue repaints owner-drawn toggles even when their state is unchanged.
+    if (up_->GetValue() != up) up_->SetValue(up);
+    if (down_->GetValue() != !up) down_->SetValue(!up);
     for (auto* button : {up_, down_}) {
         const auto colour = button->GetValue() ? blue : wxColour(224, 232, 240);
         if (button->GetBackgroundColour() != colour) {
@@ -466,7 +517,17 @@ void MainFrame::refresh_state() {
     if (language_->GetSelection() != language_index) language_->SetSelection(language_index);
     language_->Enable(preferences.mode == Mode::simple);
     sequence_button_->Enable(preferences.mode == Mode::custom);
-    set_label(prepare_, utf8("PREPARAR SIGUIENTE | " + controller_.selection_text()));
+    const auto selected_languages = preferences.mode == Mode::simple
+        ? std::vector<Language>{preferences.simple_language}
+        : preferences.mode == Mode::sequential
+            ? std::vector<Language>{Language::es, Language::en, Language::pt}
+            : preferences.custom_languages;
+    std::string preparation = "PREPARAR SIGUIENTE | ";
+    for (std::size_t i = 0; i < selected_languages.size(); ++i) {
+        if (i) preparation += " > ";
+        preparation += short_label(selected_languages[i]);
+    }
+    set_label(prepare_, utf8(preparation));
 
     const auto& active = controller_.active_plan();
     const auto& state = controller_.state();
@@ -521,12 +582,19 @@ void MainFrame::refresh_state() {
             controls.name_button->SetToolTip(description);
         }
     }
-    set_label(playing_title_, utf8(controller_.playback_title()));
-    auto detail = controller_.playback_detail();
-    if ((state.status == PlaybackStatus::playing || state.status == PlaybackStatus::paused) && !state.between_languages)
-        detail += " | " + progress_text(state);
+    std::string detail;
+    if (active && !active->tracks.empty() &&
+        (state.status == PlaybackStatus::playing || state.status == PlaybackStatus::paused)) {
+        const auto index = state.between_languages
+            ? state.next_track_index.value_or(state.track_index + 1) : state.track_index;
+        if (index < active->tracks.size()) {
+            detail = (state.between_languages ? "Siguiente: " : "") +
+                label(active->tracks[index].language) + " | " + std::to_string(index + 1) +
+                " de " + std::to_string(active->tracks.size());
+            if (!state.between_languages) detail += " | " + progress_text(state);
+        }
+    }
     set_label(playing_detail_, utf8(detail));
-    set_label(status_, utf8(controller_.status_text()));
     const wxString pause_label = (preferences.keyboard.enter_pauses ? "ENTER  |  " : "") +
         wxString(state.status == PlaybackStatus::paused ? "Reanudar" : "Pausar");
     if (pause_->GetLabel() != pause_label) pause_->SetLabel(pause_label);

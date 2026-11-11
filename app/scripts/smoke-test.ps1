@@ -164,15 +164,6 @@ function Wait-Text([IntPtr]$Window, [string]$Text, [int]$Timeout = 6000) {
     } while ([DateTime]::UtcNow -lt $end)
     return $false
 }
-function Get-Compact {
-    $end = [DateTime]::UtcNow.AddSeconds(6)
-    do {
-        $handle = [AudioguiaSmoke]::Windows($Process.Id) | Where-Object { [AudioguiaSmoke]::Text($_) -eq 'Tolkeyen | Vista compacta' } | Select-Object -First 1
-        if ($handle -and ![AudioguiaSmoke]::IsWindowVisible($Main)) { return [IntPtr]$handle }
-        Start-Sleep -Milliseconds 80
-    } while ([DateTime]::UtcNow -lt $end)
-    throw 'Compact window did not become visible'
-}
 function Click([IntPtr]$Window, [string]$Text) {
     $handle = Find-Control $Window $Text 'Button'
     [void][AudioguiaSmoke]::SetForegroundWindow($Window)
@@ -293,13 +284,7 @@ try {
     [void][AudioguiaSmoke]::MoveWindow($Main,$Original.Left,$Original.Top,($Original.Right-$Original.Left),($Original.Bottom-$Original.Top),$true)
     Start-Sleep -Milliseconds 300
     Capture $Main 'main'
-    Click $Main 'Vista compacta'
-    $Compact = Get-Compact
-    Check ($Compact -ne $Main -and [AudioguiaSmoke]::IsWindowVisible($Compact)) 'Compact view replaces the full view'
-    Check (Wait-Text $Compact 'DETENIDO') 'Compact view shares stopped state'
-    Capture $Compact 'compact'
-    Click $Compact 'Vista completa'
-    Check ([AudioguiaSmoke]::IsWindowVisible($Main)) 'Return to full view'
+    Check (-not ((Window-Texts $Main) -contains 'Vista compacta')) 'Only the main operating view is available'
 
     Click $Main 'Configurar audios y salida'
     $Deadline = [DateTime]::UtcNow.AddSeconds(10)
@@ -333,16 +318,11 @@ try {
         Start-Sleep -Milliseconds 250
         Check ([AudioguiaSmoke]::Text($ProgressPoint) -eq $PausedProgress) 'Visible progress is frozen while paused'
         Capture $Main 'point-progress-paused'
-        Click $Main 'Vista compacta'
-        $Compact = Get-Compact
-        Check (Wait-Text $Compact 'PAUSADO') 'Compact view shares the paused point'
-        Capture $Compact 'compact-paused'
-        Click $Compact 'Reanudar'
-        Check (Wait-Text $Compact 'REPRODUCIENDO') 'Resume from compact view'
-        Click $Compact 'Detener'
-        Check (Wait-Text $Compact 'DETENIDO') 'Stop clears the sequence from compact view'
+        Click $Main 'Reanudar'
+        Check (Wait-Text $Main 'REPRODUCIENDO') 'Resume from main view'
+        Click $Main 'Detener'
+        Check (Wait-Text $Main 'DETENIDO') 'Stop clears the sequence from main view'
         Check ([AudioguiaSmoke]::Text($ProgressPoint) -notmatch '\d+:\d{2} /') 'Stop clears the point progress text'
-        Click $Compact 'Vista completa'
         $Mode = Find-Control $Main 'Simple' 'ComboBox'
         [AudioguiaSmoke]::Select($Mode,1)
         Click $Main 'Bienvenida'
@@ -450,19 +430,6 @@ try {
                 [AudioguiaSmoke]::Key($Point,0x61,$false,$true)
             }
             Check (Wait-Text $Main 'DETENIDO' 1300) 'Held digit repeat does not restart the track'
-            Click $Main 'Vista compacta'
-            $Compact = Get-Compact
-            $CompactStop = Find-Control $Compact 'Detener' 'Button'
-            [void][AudioguiaSmoke]::SetForegroundWindow($Compact)
-            [AudioguiaSmoke]::MouseClick($CompactStop)
-            Start-Sleep -Milliseconds 150
-            [AudioguiaSmoke]::Key($CompactStop,0x61,$false,$false)
-            Check (Wait-Text $Compact 'REPRODUCIENDO') 'Focused compact view accepts numpad points'
-            [AudioguiaSmoke]::Key($CompactStop,0x0D,$true,$false)
-            Check (Wait-Text $Compact 'PAUSADO') 'Numpad Enter pauses from compact view'
-            [AudioguiaSmoke]::Key($CompactStop,0x60,$false,$false)
-            Check (Wait-Text $Compact 'DETENIDO') 'Numpad 0 stops from compact view'
-            Click $Compact 'Vista completa'
         } else { $Results.Add('SKIP: numeric numpad smoke requires Num Lock already on; test did not change it') }
         Click $Main 'Bienvenida'
         Check (Wait-Text $Main 'REPRODUCIENDO') 'Playback for focus-isolation test'

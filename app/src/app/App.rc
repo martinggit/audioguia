@@ -1,6 +1,8 @@
 #include <windows.h>
 
+APP_ICON ICON "../../../audioguia-logo-v1.ico"
 1 RT_MANIFEST "App.manifest"
+101 RCDATA "../../../tolkeyen-logo.png"
 
 1 VERSIONINFO
 FILEVERSION 0,1,0,0

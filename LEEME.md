@@ -59,16 +59,20 @@ La app no determina el punto por el orden de los archivos: utiliza el mapa expli
 - **Pausar/Reanudar:** conserva la posicion. Durante el intervalo entre idiomas conserva el tiempo restante.
 - **Detener:** cancela tambien idiomas pendientes y pausas.
 - **Cambiar modo o idioma mientras suena:** prepara el proximo disparo; el audio activo mantiene su secuencia original.
-- **Vista compacta:** comparte el reproductor y muestra seleccion preparada, punto activo, idioma, indice, estado y errores. Su posicion se recuerda. Cerrar la compacta vuelve a la completa; para salir, cierre la completa.
-- **Siempre visible:** mantiene la compacta encima de otras ventanas, pero no le da el foco automaticamente.
+- **Ventana unica:** toda la operacion se realiza desde la botonera principal. Cerrar la ventana detiene el audio y sale de la aplicacion.
 
 ## Numpad
 
 1. Active Bloq Num usted mismo; la app nunca cambia su estado global.
-2. Haga clic en la ventana completa o compacta para activarla. Los atajos se suspenden si el foco esta en un selector o en volumen. En la completa, pulse Usar numpad para volver a operar sin interrumpir el audio. La franja inferior indica si el numpad esta listo, suspendido por edicion, sin foco o con Bloq Num apagado.
+2. Haga clic en la ventana principal para activarla. Los atajos se suspenden si el foco esta en un selector o en volumen. Pulse Usar numpad para volver a operar sin interrumpir el audio. La franja inferior indica si el numpad esta listo, suspendido por edicion, sin foco o con Bloq Num apagado.
 3. Numpad 1-8 dispara el punto de la direccion activa. En DOWN, 7 y 8 no hacen nada.
 4. Numpad 0 detiene y vacia la secuencia.
 5. Enter del numpad pausa/reanuda. El Enter principal no es ese atajo.
+6. `/` del numpad alterna UP/DOWN para el siguiente punto, sin interrumpir la reproduccion actual.
+7. `*` del numpad alterna Simple, Secuencial y Personalizado para el siguiente punto.
+8. `+` y `-` del numpad ajustan el volumen en pasos del 5 %, entre 0 y 100 %, incluso durante la reproduccion.
+
+La tecla decimal no tiene un atajo asignado. Los operadores `/`, `*`, `+` y `-` funcionan tambien con Bloq Num apagado; los digitos requieren Bloq Num activado.
 
 Las repeticiones al mantener una tecla se ignoran. Los atajos se suspenden en el dialogo de configuracion y cuando se edita un selector, secuencia o volumen. La asignacion numerica se puede cambiar en `preferences.keyboard` del JSON con la app cerrada; no se admiten colisiones.
 
@@ -93,7 +97,7 @@ Los atajos funcionan SOLO con foco en esta app. Un numpad comun no se aisla glob
 4. Durante una pista pulse otra: debe terminar la anterior y comenzar el punto nuevo.
 5. Pruebe Pausar/Reanudar y Detener durante pista y entre idiomas.
 6. Mantenga Numpad 1 presionado: no debe reiniciar repetidamente el audio.
-7. Cambie entre completa y compacta durante reproduccion y pausa.
+7. Compruebe que cerrar la ventana durante la reproduccion detiene el audio y termina la aplicacion.
 8. Active otra aplicacion: el numpad no debe disparar esta audioguia; recuerde que escribira normalmente en esa otra aplicacion.
 9. Compruebe DOWN 1-6 y que DOWN 7/8 no interrumpan lo que esta sonando.
 10. Para ensayar un faltante, cierre la app y cambie temporalmente el nombre de un MP3. En Secuencial o Personalizado compruebe que se salta ese idioma; en Simple, que se informa que no hay audio disponible. Luego restaure su nombre.

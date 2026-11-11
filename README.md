@@ -123,11 +123,11 @@ Cambiar la salida desde la app detiene la reproducción actual. Si se desconecta
 
 El área de avisos al pie de Configuración aparece únicamente cuando hay un mensaje, por ejemplo una asociación pendiente o un error al guardar. No es un campo para completar.
 
-### Vista compacta
+### Ventana de operacion
 
-La vista compacta ocupa menos espacio y comparte la misma reproducción con la ventana completa: podés alternar entre ambas mientras escuchás. La opción **Siempre visible** permite mantenerla por encima de otras ventanas.
+La aplicación utiliza una única ventana con la botonera, los controles y la información de reproducción. Los atajos del numpad funcionan cuando esta ventana tiene el foco.
 
-Cerrar la vista compacta vuelve a la ventana completa. **Para salir de la aplicación, cerrá la ventana completa.**
+**Para salir de la aplicación, cerrá la ventana principal.** El audio se detiene al cerrar.
 
 ### Teclado numérico (opcional)
 

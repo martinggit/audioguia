@@ -4,7 +4,7 @@
 
 Desarrollar y mantener una aplicación desktop portable para Windows que permita al operador reproducir audios de un recorrido turístico. La base ya está implementada: extenderla respetando su arquitectura y comportamiento existente.
 
-La aplicación dispone de botoneras UP/DOWN, tres modos de reproducción, tres idiomas, selección de salida, volumen propio, preferencias persistentes, atajos del numpad y vistas completa y compacta. El uso es local, con archivos aportados por el operador.
+La aplicación dispone de botoneras UP/DOWN, tres modos de reproducción, tres idiomas, selección de salida, volumen propio, preferencias persistentes, atajos del numpad y una única ventana de operación. El uso es local, con archivos aportados por el operador.
 
 ## Stack y plataforma
 
@@ -40,7 +40,6 @@ Consultar `app/vendor-versions.json` para versiones, URLs y checksums de herrami
 | `app/src/config/ConfigRepository.*` | Lectura y validación JSON; persistencia con temporal, respaldo y recuperación. |
 | `app/src/input/KeyboardController.*` | Traducción del numpad y filtrado de mensajes locales según foco y edición. |
 | `app/src/ui/MainFrame.*` | Botonera de dos columnas del grupo seleccionado, transporte fijo, preparación y aviso de disponibilidad del numpad. |
-| `app/src/ui/CompactFrame.*` | Vista compacta del mismo reproductor. |
 | `app/src/ui/PreferencesDialog.*` | Edición de un borrador, asociaciones de archivos y selección de salida. |
 | `app/src/ui/SequenceEditor.*` | Lista nativa con casillas, posiciones, arrastre local y Subir/Bajar; se abre desde Editar idiomas... y guarda los cambios inmediatamente. Los idiomas desmarcados permanecen visibles al final, sin posición. |
 | `app/tests/` | Suites C++ de dominio/configuración, controlador, teclado y audio. |
@@ -48,7 +47,7 @@ Consultar `app/vendor-versions.json` para versiones, URLs y checksums de herrami
 | `app/config/audioguia.example.json` | Configuración de ejemplo versionada. |
 | `audio/` | Archivos operativos locales; solo se versionan los `.gitkeep`. |
 
-Flujo principal: acción de UI o numpad → `AppController` → `PlaybackPlanner` → `IAudioPlayer` → eventos de audio → `AppController::poll()` → actualización de ambas vistas.
+Flujo principal: acción de UI o numpad → `AppController` → `PlaybackPlanner` → `IAudioPlayer` → eventos de audio → `AppController::poll()` → actualización de la ventana principal.
 
 ## Reglas funcionales que deben preservarse
 
@@ -56,12 +55,12 @@ Flujo principal: acción de UI o numpad → `AppController` → `PlaybackPlanner
 2. Idiomas: `es`, `en`, `pt`. Carpetas iniciales: `audio/0001-ESP`, `audio/0002-ENG`, `audio/0003-PORT`. Conservar la escritura exacta `PORT`.
 3. Simple reproduce un idioma. Secuencial reproduce el mismo punto en español → inglés → portugués; no avanza a otro punto. Personalizado reproduce los idiomas seleccionados en el orden guardado.
 4. El intervalo entre idiomas es común, de 0 a 60000 ms; por defecto, 1000 ms.
-5. Solo hay un reproductor compartido por las dos vistas. No superponer narraciones ni crear otro motor al alternar ventanas.
+5. Solo hay un reproductor. No superponer narraciones ni crear otro motor.
 6. Un nuevo punto válido cancela lo anterior antes de validar sus archivos. Si falla, queda en error sin retomar lo anterior. DOWN 7/8 no cambia ni interrumpe nada.
 7. Antes de iniciar, omitir los archivos inexistentes y validar todos los presentes. Reproducir los idiomas disponibles en el orden seleccionado, conservando sus índices originales. Informar error si ninguno está disponible o un archivo presente es inválido/inaccesible. Los eventos de intervalo indican el índice real del próximo idioma disponible.
 8. El plan activo es un snapshot. Cambiar modo, idioma o asociaciones prepara la próxima reproducción. El volumen sí se aplica en vivo; cambiar el dispositivo de salida detiene la reproducción actual.
 9. Pausar conserva la posición y, durante el intervalo, el tiempo restante. Detener cancela también los idiomas pendientes y el intervalo.
-10. Al iniciar se muestra la vista completa sin autoplay. Cerrar la compacta vuelve a la completa; cerrar la completa termina el audio y la aplicación.
+10. Al iniciar se muestra la ventana principal sin autoplay. Cerrarla termina el audio y la aplicación. La vista compacta fue eliminada; sus campos JSON se conservan únicamente por compatibilidad.
 11. Numpad 1–8 reproduce, 0 detiene y Enter del numpad pausa/reanuda con la configuración inicial. Respetar remapeos, foco, suspensión durante edición y filtrado de repetición. El Enter principal no equivale al del numpad. La app consulta Bloq Num sin modificarlo.
 12. La salida predeterminada se resuelve al empezar cada secuencia y queda fijada. Una desconexión detiene con error, sin redirigir ni reanudar automáticamente. El volumen de la app no cambia el volumen global.
 
@@ -86,7 +85,7 @@ Flujo principal: acción de UI o numpad → `AppController` → `PlaybackPlanner
 - El selector asocia archivos ya presentes en `audio`; actualmente no importa archivos externos.
 - Mantener JSON estricto UTF-8, validación de claves/IDs/secuencias y escritura mediante temporal hermano, flush, respaldo `.bak` y rollback.
 - Un JSON inválido se conserva: usar valores por defecto solo en memoria y deshabilitar el guardado hasta corregirlo y reiniciar.
-- Un fallo de escritura conserva los cambios en memoria y muestra el aviso en ambas vistas.
+- Un fallo de escritura conserva los cambios en memoria y muestra el aviso en la ventana principal.
 - Si cambia el esquema, revisar `Models`, `ConfigRepository`, configuración de ejemplo, compatibilidad con datos existentes y pruebas relacionadas.
 
 ## Compilación y ejecución
@@ -131,7 +130,7 @@ En Linux/WSL, con dependencias y sysroot GCC 15 preparados:
 bash app/scripts/test-linux.sh
 ```
 
-El script espera la toolchain en `app/.tools/linux`, o en la ruta indicada por `AUDIOGUIA_LINUX_TOOLCHAIN`. No la instala. Informar comandos ejecutados, resultados y cualquier bloqueo del entorno. Para cambios de interfaz revisar ambas vistas; para cambios de audio comprobar cancelación, pausa y transición entre idiomas.
+El script espera la toolchain en `app/.tools/linux`, o en la ruta indicada por `AUDIOGUIA_LINUX_TOOLCHAIN`. No la instala. Informar comandos ejecutados, resultados y cualquier bloqueo del entorno. Para cambios de interfaz revisar la ventana principal; para cambios de audio comprobar cancelación, pausa y transición entre idiomas.
 
 ## Convenciones de trabajo
 

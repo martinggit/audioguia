@@ -2,12 +2,12 @@
 #include "audio/MiniaudioPlayer.h"
 #include "input/KeyboardController.h"
 #include "ui/MainFrame.h"
-#include "ui/CompactFrame.h"
 #include <wx/wx.h>
 #include <wx/apptrait.h>
 #include <wx/evtloop.h>
 #include <wx/stdpaths.h>
 #include <wx/weakref.h>
+#include <wx/iconbndl.h>
 #include <functional>
 #include <memory>
 
@@ -47,18 +47,17 @@ public:
             const auto executable = std::filesystem::path(wxStandardPaths::Get().GetExecutablePath().ToStdWstring());
             controller_ = std::make_unique<AppController>(executable.parent_path().parent_path(),
                                                          std::make_unique<MiniaudioPlayer>());
-            main_ = new MainFrame(*controller_, [this] { show_compact(); });
-            compact_ = new CompactFrame(*controller_, [this] { show_full(); });
-            keyboard_ = std::make_unique<KeyboardController>(*controller_, *main_, *compact_);
+            main_ = new MainFrame(*controller_);
+#ifdef _WIN32
+            const wxIconBundle icons("APP_ICON", static_cast<WXHINSTANCE>(nullptr));
+            main_->SetIcons(icons);
+#endif
+            keyboard_ = std::make_unique<KeyboardController>(*controller_, *main_);
             SetTopWindow(main_);
             main_->Bind(wxEVT_CLOSE_WINDOW, [this](wxCloseEvent&) {
                 timer_.Stop();
                 keyboard_.reset();
                 controller_->stop();
-                if (compact_) {
-                    compact_->Destroy();
-                    compact_ = nullptr;
-                }
                 if (main_) {
                     main_->Destroy();
                     main_ = nullptr;
@@ -68,7 +67,6 @@ public:
             Bind(wxEVT_TIMER, [this](wxTimerEvent&) {
                 controller_->poll();
                 if (main_) main_->refresh_state();
-                if (compact_) compact_->refresh_state();
             }, timer_.GetId());
             main_->Show();
             main_->focus_transport();
@@ -88,24 +86,9 @@ public:
     }
 
 private:
-    void show_compact() {
-        compact_->refresh_state();
-        compact_->Show();
-        main_->Hide();
-        compact_->Raise(); // Only an explicit operator action changes activation.
-    }
-    void show_full() {
-        main_->refresh_state();
-        main_->Show();
-        compact_->Hide();
-        main_->Raise();
-        main_->focus_transport();
-    }
-
     std::unique_ptr<AppController> controller_;
     std::unique_ptr<KeyboardController> keyboard_;
     wxWeakRef<MainFrame> main_;
-    wxWeakRef<CompactFrame> compact_;
     wxTimer timer_;
 };
 

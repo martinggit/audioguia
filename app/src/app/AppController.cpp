@@ -66,12 +66,6 @@ void AppController::set_preferences(Preferences preferences) {
     apply_config(std::move(updated));
 }
 
-void AppController::remember_compact_position(int x, int y) {
-    config_.preferences.compact_x = x;
-    config_.preferences.compact_y = y;
-    save();
-}
-
 std::vector<OutputDevice> AppController::devices() { return player_->devices(); }
 
 void AppController::save() {

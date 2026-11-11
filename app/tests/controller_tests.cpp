@@ -403,14 +403,13 @@ void malformed_config_is_never_overwritten() {
     auto in_memory = app.config();
     in_memory.points.front().name = "Only changed in memory";
     app.apply_config(in_memory);
-    app.remember_compact_position(-1200, 50);
     app.play(Direction::up, 1);
     check(fake.plays.size() == 1 && fake.plays.front().plan.gap_ms == 25,
           "In-memory fallback must remain usable with the fake player");
     app.stop();
     app.save();
     check(app.warning() == warning, "Saving disabled after a bad load must not clear the original warning");
-    check(app.config().points.front().name == "Only changed in memory" && app.config().preferences.compact_x == -1200,
+    check(app.config().points.front().name == "Only changed in memory",
           "In-memory edits were unexpectedly discarded");
     check(read_bytes(repository.file_path()) == malformed, "Controller auto-repaired or overwrote malformed JSON");
     check(read_bytes(backup_path(repository)) == backup, "Controller modified the recoverable backup");
@@ -714,14 +713,17 @@ int main() {
         check_state(app.state(), AudioEvent{});
         check(read_bytes(fixture.repository.file_path()) == original, "Device enumeration saved config");
     });
-    tests.run("compact position accepts signed coordinates without audio commands", [] {
+    tests.run("legacy compact preferences survive configuration round trip", [] {
         Fixture fixture;
         auto& app = *fixture.app;
-        app.remember_compact_position(-1920, -50);
-        check(app.config().preferences.compact_x == -1920 && app.config().preferences.compact_y == -50,
-              "Signed compact position was not retained");
+        auto legacy = app.config();
+        legacy.preferences.compact_x = -1920;
+        legacy.preferences.compact_y = -50;
+        legacy.preferences.always_on_top = true;
+        fixture.repository.save(legacy);
         const auto persisted = fixture.repository.load();
-        check(persisted.preferences.compact_x == -1920 && persisted.preferences.compact_y == -50,
+        check(persisted.preferences.compact_x == -1920 && persisted.preferences.compact_y == -50 &&
+              persisted.preferences.always_on_top,
               "Signed compact position was not saved");
         check_commands(*fixture.fake, {});
         check_state(app.state(), AudioEvent{});

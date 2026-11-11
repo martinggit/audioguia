@@ -50,6 +50,29 @@ int main() {
         bindings.enter_pauses = false;
         enter.repeat = false;
         check(translate_key(bindings, enter).action == KeyboardAction::none);
+        for (const auto operation : {NumpadOperator::divide, NumpadOperator::multiply,
+                                     NumpadOperator::add, NumpadOperator::subtract}) {
+            KeyPress key;
+            key.operation = operation;
+            const auto expected = operation == NumpadOperator::divide ? KeyboardAction::direction
+                : operation == NumpadOperator::multiply ? KeyboardAction::mode
+                : operation == NumpadOperator::add ? KeyboardAction::volume_up : KeyboardAction::volume_down;
+            check(translate_key(bindings, key).action == expected);
+            // Operators remain operators with Num Lock off.
+            key.num_lock = false;
+            check(translate_key(bindings, key).action == expected);
+            key.repeat = true;
+            check(translate_key(bindings, key).action == KeyboardAction::none);
+            key.repeat = false;
+            key.editing = true;
+            check(translate_key(bindings, key).action == KeyboardAction::none);
+            key.editing = false;
+            key.app_has_focus = false;
+            check(translate_key(bindings, key).action == KeyboardAction::none);
+            key.app_has_focus = true;
+            key.modified = true;
+            check(translate_key(bindings, key).action == KeyboardAction::none);
+        }
         std::cout << "keyboard_tests: " << checks << " checks passed\n";
         return 0;
     } catch (const std::exception& error) {

@@ -5,9 +5,9 @@ namespace audioguia {
 
 class AppController;
 class MainFrame;
-class CompactFrame;
 
-enum class KeyboardAction { none, point, stop, pause };
+enum class KeyboardAction { none, point, stop, pause, direction, mode, volume_up, volume_down };
+enum class NumpadOperator { none, divide, multiply, add, subtract };
 struct KeyboardCommand {
     KeyboardAction action{KeyboardAction::none};
     int point{0};
@@ -20,10 +20,18 @@ struct KeyPress {
     bool editing{false};
     bool app_has_focus{true};
     bool modified{false};
+    NumpadOperator operation{NumpadOperator::none};
 };
 
 inline KeyboardCommand translate_key(const KeyboardBindings& bindings, const KeyPress& key) {
     if (!key.app_has_focus || key.editing || key.modified || key.repeat) return {};
+    switch (key.operation) {
+    case NumpadOperator::divide: return {KeyboardAction::direction, 0};
+    case NumpadOperator::multiply: return {KeyboardAction::mode, 0};
+    case NumpadOperator::add: return {KeyboardAction::volume_up, 0};
+    case NumpadOperator::subtract: return {KeyboardAction::volume_down, 0};
+    case NumpadOperator::none: break;
+    }
     if (key.numpad_enter && bindings.enter_pauses) return {KeyboardAction::pause, 0};
     if (!key.num_lock || key.digit < 0) return {};
     if (key.digit == bindings.stop_key) return {KeyboardAction::stop, 0};
@@ -35,14 +43,13 @@ inline KeyboardCommand translate_key(const KeyboardBindings& bindings, const Key
 
 class KeyboardController {
 public:
-    KeyboardController(AppController& controller, MainFrame& main, CompactFrame& compact)
-        : controller_(controller), main_(main), compact_(compact) {}
+    KeyboardController(AppController& controller, MainFrame& main)
+        : controller_(controller), main_(main) {}
     bool handle_native_message(void* message);
     static bool editing_focus();
 private:
     AppController& controller_;
     MainFrame& main_;
-    CompactFrame& compact_;
 };
 
 } // namespace audioguia
