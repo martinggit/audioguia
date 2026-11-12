@@ -125,15 +125,15 @@ El área de avisos al pie de Configuración aparece únicamente cuando hay un me
 
 ### Ventana de operacion
 
-La aplicación utiliza una única ventana con la botonera, los controles y la información de reproducción. Los atajos normales del numpad funcionan cuando esta ventana tiene el foco. La opción **Botonera dedicada** permite usar el Genius en segundo plano mediante el puente Interception integrado.
+La aplicación utiliza una única ventana con la botonera, los controles y la información de reproducción. El numpad configurado se dedica automáticamente a Audioguía mediante Interception, en primer y segundo plano. El mouse sigue disponible.
 
 ### Genius dedicado en segundo plano
 
-Con Interception instalado y el runtime preparado, marcá **Botonera dedicada** y
+Con Interception instalado y el runtime preparado, la captura dedicada se activa al abrir la app;
 usá **Configurar botonera** para elegir el receptor Genius la primera vez. La app
 recuerda la selección en el perfil local del equipo e inicia el puente oculto en
-las siguientes aperturas. **GENIUS ACTIVO** confirma la captura. Desmarcar libera
-el teclado; cerrar Audioguía detiene el audio y su puente. Minimizar permite seguir
+cada apertura. **NUMPAD ACTIVO** confirma la captura. Cerrar Audioguía libera
+el teclado y detiene el audio y su puente. Minimizar permite seguir
 operando desde otras aplicaciones. La reconexión del mismo receptor es automática;
 durante la detección puede escribir normalmente hasta recuperar la captura.
 
@@ -157,7 +157,7 @@ las condiciones de licencia del controlador para su despliegue comercial.
 
 También podés operar con el mouse; no hace falta un teclado numérico para usar la app.
 
-Con la ventana de Audioguía activa y Bloq Num encendido:
+Con el estado **NUMPAD ACTIVO**, sin depender del foco ni de Bloq Num:
 
 | Tecla del numpad | Acción |
 | --- | --- |
@@ -165,9 +165,9 @@ Con la ventana de Audioguía activa y Bloq Num encendido:
 | **0** | Detiene la reproducción. |
 | **Enter del numpad** | Pausa o reanuda. No es el Enter principal del teclado. |
 
-Los atajos se suspenden al editar preferencias, selectores o volumen, y cuando estás usando otra aplicación. **Siempre visible no significa que los atajos funcionen en segundo plano.** Mantener una tecla presionada no dispara el audio repetidamente.
+Los atajos se suspenden en los diálogos de configuración. Funcionan mientras usás otra aplicación. Mantener una tecla presionada no dispara el audio repetidamente.
 
-Después de editar una opción o el volumen, presioná **Usar numpad**: devuelve el foco a la operación sin iniciar ni detener audio. La franja inferior indica **NUMPAD LISTO**, **ATAJOS SUSPENDIDOS**, **BLOQ NUM APAGADO** o **SIN FOCO**. Al cambiar UP/DOWN o cerrar un diálogo, el foco vuelve a los controles de operación.
+La franja inferior muestra el estado real del numpad y los botones **Configurar botonera** y **Diagnóstico**. No hay casilla de activación ni botón Usar numpad.
 
 La ventana adapta su tamaño inicial al monitor. Podés maximizarla para tener botones más amplios; en ventanas pequeñas, la zona de puntos permite desplazamiento y los controles de pausa y detener permanecen visibles.
 
@@ -181,7 +181,7 @@ La ventana adapta su tamaño inicial al monitor. Podés maximizarla para tener b
 | No tengo audios en inglés. | Podés usar Secuencial: saltará los archivos ausentes. También podés seleccionar solo español y portugués en Personalizado. |
 | La app indica que reproduce, pero no escucho. | Revisá el volumen de la app, el de Windows, la salida seleccionada y la conexión de parlantes o auriculares. |
 | Un MP3 está presente, pero aparece un error. | Probalo en otro reproductor y verificá que sea un audio válido. Renombrar otro tipo de archivo a `.mp3` no lo convierte. |
-| El numpad no responde. | Activá la ventana de Audioguía, encendé Bloq Num y pulsá **Usar numpad**. Revisá el aviso de la franja inferior. |
+| El numpad no responde. | Revisá el estado inferior, el receptor y sus pilas. Usá **Configurar botonera** para seleccionar o reintentar el dispositivo, y **Diagnóstico** para revisar el registro. |
 | Aparece un aviso al guardar preferencias. | Usá una carpeta con permisos de escritura, como Documentos. Los cambios pueden seguir activos solo durante esa sesión. |
 | Aparece un aviso de configuración inválida. | Cerrá la app y revisá `app/config/audioguia.json`, o restaurá una copia válida de `audioguia.json.bak`. El archivo inválido no se sobrescribe automáticamente. |
 

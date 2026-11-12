@@ -77,7 +77,6 @@ public:
     KeyboardController(AppController& controller, MainFrame& main)
         : controller_(controller), main_(main) {}
     bool handle_native_message(void* message);
-    static bool editing_focus();
 private:
     void execute(const KeyboardCommand& command);
     AppController& controller_;

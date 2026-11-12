@@ -17,8 +17,6 @@ public:
     ~DedicatedBridge();
     DedicatedBridge(const DedicatedBridge&) = delete;
     DedicatedBridge& operator=(const DedicatedBridge&) = delete;
-    bool enabled() const { return enabled_; }
-    void enable(bool value);
     void tick();
     void configure();
     void diagnostics();
@@ -33,7 +31,6 @@ private:
     HANDLE job_{nullptr};
     DWORD started_{0};
     ULONG_PTR session_{0};
-    bool enabled_{false};
     int state_{0};
     std::string error_;
     std::filesystem::path settings_;

@@ -63,8 +63,8 @@ La app no determina el punto por el orden de los archivos: utiliza el mapa expli
 
 ## Numpad
 
-1. Active Bloq Num usted mismo; la app nunca cambia su estado global.
-2. Haga clic en la ventana principal para activarla. Los atajos se suspenden si el foco esta en un selector o en volumen. Pulse Usar numpad para volver a operar sin interrumpir el audio. La franja inferior indica si el numpad esta listo, suspendido por edicion, sin foco o con Bloq Num apagado.
+1. El numpad configurado se captura automaticamente al abrir Audioguia. Sus posiciones fisicas no dependen de Bloq Num.
+2. Espere NUMPAD ACTIVO. Puede minimizar la ventana y operar desde otra aplicacion; el teclado principal se mantiene independiente. El mouse sigue disponible como respaldo.
 3. Numpad 1-8 dispara el punto de la direccion activa. En DOWN, 7 y 8 no hacen nada.
 4. Numpad 0 detiene y vacia la secuencia.
 5. Enter del numpad pausa/reanuda. El Enter principal no es ese atajo.
@@ -72,20 +72,20 @@ La app no determina el punto por el orden de los archivos: utiliza el mapa expli
 7. `*` del numpad alterna Simple, Secuencial y Personalizado para el siguiente punto.
 8. `+` y `-` del numpad ajustan el volumen en pasos del 5 %, entre 0 y 100 %, incluso durante la reproduccion.
 
-9. La tecla decimal del numpad alterna ESP, ENG y PORT solo en modo Simple, con Bloq Num activado. Prepara el siguiente punto sin modificar el audio actual; en Secuencial y Personalizado no cambia el idioma.
+9. La tecla decimal del numpad alterna ESP, ENG y PORT solo en modo Simple. Prepara el siguiente punto sin modificar el audio actual; en Secuencial y Personalizado no cambia el idioma.
 
-Los operadores `/`, `*`, `+` y `-` funcionan tambien con Bloq Num apagado; los digitos y la tecla decimal requieren Bloq Num activado.
+Ninguno de estos atajos dedicados requiere Bloq Num activado.
 
-Las repeticiones al mantener una tecla se ignoran. Los atajos se suspenden en el dialogo de configuracion y cuando se edita un selector, secuencia o volumen. La asignacion numerica se puede cambiar en `preferences.keyboard` del JSON con la app cerrada; no se admiten colisiones.
+Las repeticiones al mantener una tecla se ignoran. Los atajos se suspenden en los dialogos de configuracion. La asignacion numerica se puede cambiar en `preferences.keyboard` del JSON con la app cerrada; no se admiten colisiones.
 
-Los atajos normales funcionan SOLO con foco en esta app. Para el Genius dedicado
-se dispone de una integracion opcional con Interception: activar **Botonera dedicada**
-inicia el puente oculto para operar en segundo plano sin enviar sus teclas a otras aplicaciones.
-La primera vez, pulsar **Configurar botonera** y seleccionar el Genius. La opcion y
-el receptor se recuerdan en esta computadora; no hace falta abrir PowerShell.
-El estado **GENIUS ACTIVO** confirma la captura. Desconectar/reconectar el receptor
+La operacion por numpad es siempre dedicada mediante Interception: el puente oculto
+arranca automaticamente y evita enviar las teclas capturadas a otras aplicaciones.
+La primera vez, pulsar **Configurar botonera** y seleccionar el numpad. El receptor
+se recuerda en esta computadora; la botonera dedicada se activa en cada arranque,
+incluso si se desactivo antes. No hace falta abrir PowerShell.
+El estado **NUMPAD ACTIVO** confirma la captura. Desconectar/reconectar el receptor
 provoca una busqueda y captura automatica, sin iniciar audios. Durante la deteccion
-puede haber entradas normales del teclado. Desmarcar libera el Genius; cerrar
+puede haber entradas normales del teclado. Cerrar
 Audioguia cierra tambien su puente. **Diagnostico** abre el registro local.
 Requiere el controlador instalado y la identificacion validada del receptor;
 consultar `app/docs/interception-prueba.md`. La app por si sola no instala controladores.

@@ -43,6 +43,8 @@ add_executable(TolkeyenAudioguia WIN32
     src/app/App.cpp src/app/App.rc src/input/KeyboardController.cpp src/input/DedicatedBridge.cpp
     src/ui/MainFrame.cpp
     src/ui/SequenceEditor.cpp src/ui/PreferencesDialog.cpp)
+set_property(SOURCE src/app/App.rc PROPERTY OBJECT_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/../tolkeyen-logo.png;${CMAKE_CURRENT_SOURCE_DIR}/../audioguia-logo-v1.ico;${CMAKE_CURRENT_SOURCE_DIR}/src/app/App.manifest")
 target_compile_options(TolkeyenAudioguia PRIVATE -Wall -Wextra -Wpedantic)
 target_include_directories(TolkeyenAudioguia PRIVATE src/app)
 target_link_libraries(TolkeyenAudioguia PRIVATE audioguia_core audioguia_audio wx::core wx::base)

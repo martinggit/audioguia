@@ -8,7 +8,6 @@
 
 #include <wx/button.h>
 #include <wx/choice.h>
-#include <wx/checkbox.h>
 #include <wx/dcmemory.h>
 #include <wx/image.h>
 #include <wx/imagpng.h>
@@ -159,14 +158,6 @@ wxStaticText* line(wxWindow* parent, int height = 24) {
                                   wxDefaultSize, wxST_NO_AUTORESIZE | wxST_ELLIPSIZE_END);
     text->SetMinSize(parent->FromDIP(wxSize(0, height)));
     return text;
-}
-
-bool num_lock_on() {
-#ifdef _WIN32
-    return (::GetKeyState(VK_NUMLOCK) & 1) != 0;
-#else
-    return wxGetKeyState(WXK_NUMLOCK);
-#endif
 }
 
 wxColour state_colour(PlaybackStatus status) {
@@ -371,24 +362,9 @@ MainFrame::MainFrame(AppController& controller)
     keyboard_status_ = line(keyboard_panel, 24);
     keyboard_status_->SetFont(font.Bold());
     keyboard_row->Add(keyboard_status_, 1, wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(8));
-    dedicated_input_ = new wxCheckBox(keyboard_panel, wxID_ANY, "Botonera dedicada");
-    dedicated_input_->SetToolTip("Inicia el puente automaticamente y recuerda esta preferencia en esta computadora.");
-    dedicated_input_->Bind(wxEVT_CHECKBOX, [this](wxCommandEvent&) {
-        try {
-            if (!bridge_) bridge_ = std::make_unique<DedicatedBridge>(reinterpret_cast<HWND>(GetHandle()));
-            bridge_->enable(dedicated_input_->GetValue());
-            local_error_.clear();
-        } catch (const std::exception& error) { report_input_error(error.what()); }
-        dedicated_input_->SetValue(bridge_ && bridge_->enabled());
-        refresh_state();
-    });
-    auto* ready = new wxButton(keyboard_panel, wxID_ANY, "Usar numpad");
-    ready->SetMinSize(FromDIP(wxSize(130, 36)));
-    ready->SetToolTip("Devuelve el foco a los controles de operacion sin iniciar ni detener audio.");
-    keyboard_row->Add(dedicated_input_, 0, wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(6));
     auto* configure_keypad = new wxButton(keyboard_panel, wxID_ANY, "Configurar botonera");
     auto* diagnose_keypad = new wxButton(keyboard_panel, wxID_ANY, "Diagnostico");
-    for (auto* button : {configure_keypad, diagnose_keypad, ready}) {
+    for (auto* button : {configure_keypad, diagnose_keypad}) {
         button->SetMinSize(FromDIP(wxSize(-1, 36)));
         keyboard_row->Add(button, 0, wxALIGN_CENTER_VERTICAL | wxALL, FromDIP(6));
     }
@@ -396,7 +372,6 @@ MainFrame::MainFrame(AppController& controller)
         try {
             if (!bridge_) bridge_ = std::make_unique<DedicatedBridge>(reinterpret_cast<HWND>(GetHandle()));
             bridge_->configure();
-            dedicated_input_->SetValue(bridge_->enabled());
         } catch (const std::exception& error) { report_input_error(error.what()); }
         refresh_state();
     });
@@ -438,7 +413,6 @@ MainFrame::MainFrame(AppController& controller)
         preferences.volume = static_cast<float>(volume_->GetValue()) / 100.0F;
         change_preferences(std::move(preferences));
     });
-    ready->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { focus_transport(); });
     settings->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { open_preferences(); });
     sequence_button_->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) { edit_sequence(); });
     pause_->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
@@ -464,7 +438,6 @@ MainFrame::MainFrame(AppController& controller)
     SetPosition(wxPoint(work.x + (work.width - size.x) / 2, work.y + (work.height - size.y) / 2));
     try {
         bridge_ = std::make_unique<DedicatedBridge>(reinterpret_cast<HWND>(GetHandle()));
-        dedicated_input_->SetValue(bridge_->enabled());
     } catch (const std::exception& error) { local_error_ = error.what(); }
     refresh_state();
     Bind(wxEVT_DPI_CHANGED, [this](wxDPIChangedEvent& event) {
@@ -481,10 +454,6 @@ MainFrame::~MainFrame() {
 void MainFrame::focus_transport() {
     stop_->SetFocus();
     refresh_state();
-}
-
-bool MainFrame::dedicated_input_enabled() const {
-    return dedicated_input_ && dedicated_input_->GetValue();
 }
 
 bool MainFrame::accepts_dedicated_session(unsigned long long session) const {
@@ -669,24 +638,16 @@ void MainFrame::refresh_state() {
     if (feedback_->GetValue() != utf8(feedback)) feedback_->ChangeValue(utf8(feedback));
     if (feedback_->IsShown() != !feedback.empty()) { feedback_->Show(!feedback.empty()); Layout(); scroll_->FitInside(); }
 
-    const bool editing = settings_open_ || KeyboardController::editing_focus();
-    const bool dedicated = dedicated_input_enabled();
-    const bool dedicated_ready = dedicated && !settings_open_ && IsEnabled();
+    const bool dedicated_ready = !settings_open_ && IsEnabled();
 #ifdef _WIN32
     // Advertise opt-in to the local bridge; the receiver also checks this on
     // every message. This property is not an authentication boundary.
     ::SetPropW(reinterpret_cast<HWND>(GetHandle()), L"TolkeyenAudioguia.DedicatedReady.v1",
                reinterpret_cast<HANDLE>(static_cast<INT_PTR>(dedicated_ready ? 1 : 2)));
 #endif
-    wxString keyboard;
-    if (dedicated) keyboard = !dedicated_ready ? "BOTONERA SUSPENDIDA | Cierre el dialogo"
+    const wxString keyboard = !dedicated_ready ? "BOTONERA SUSPENDIDA | Cierre el dialogo"
         : bridge_ ? utf8(bridge_->status()) : "ERROR AL PREPARAR EL PUENTE";
-    else if (!IsActive()) keyboard = "SIN FOCO | Active esta ventana para usar el numpad";
-    else if (editing) keyboard = "ATAJOS SUSPENDIDOS | Termine de editar y pulse Usar numpad";
-    else if (!num_lock_on()) keyboard = "BLOQ NUM APAGADO | Activelo para usar las teclas numericas";
-    else keyboard = "NUMPAD LISTO | El numero grande de cada boton es su tecla";
-    const auto colour = (dedicated ? dedicated_ready && bridge_ && bridge_->active()
-        : IsActive() && !editing && num_lock_on()) ? green : amber;
+    const auto colour = dedicated_ready && bridge_ && bridge_->active() ? green : amber;
     if (keyboard_status_->GetForegroundColour() != colour) keyboard_status_->SetForegroundColour(colour);
     set_label(keyboard_status_, keyboard);
 }

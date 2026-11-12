@@ -16,7 +16,6 @@ class wxStaticText;
 class wxTextCtrl;
 class wxToggleButton;
 class wxScrolledWindow;
-class wxCheckBox;
 
 namespace audioguia {
 
@@ -32,7 +31,6 @@ public:
     void focus_transport();
     // The application's input controller must also respect native modal disabling.
     bool input_suspended() const noexcept { return settings_open_; }
-    bool dedicated_input_enabled() const;
     bool accepts_dedicated_session(unsigned long long session) const;
     void report_input_error(const std::string& message);
 
@@ -64,7 +62,6 @@ private:
     wxStaticText* playing_detail_{nullptr};
     wxStaticText* volume_label_{nullptr};
     wxStaticText* keyboard_status_{nullptr};
-    wxCheckBox* dedicated_input_{nullptr};
     wxTextCtrl* feedback_{nullptr};
     wxButton* pause_{nullptr};
     wxButton* stop_{nullptr};

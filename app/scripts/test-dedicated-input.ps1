@@ -48,9 +48,12 @@ try {
     $Condition = New-Object System.Windows.Automation.PropertyCondition(
         [System.Windows.Automation.AutomationElement]::NameProperty, 'Botonera dedicada')
     $CheckBox = $Root.FindFirst([System.Windows.Automation.TreeScope]::Descendants, $Condition)
-    if (!$CheckBox) { throw 'No se encontro el selector de botonera dedicada.' }
-    $CheckHandle = [IntPtr]$CheckBox.Current.NativeWindowHandle
-    if ($CheckHandle -eq [IntPtr]::Zero) { throw 'El selector no tiene control nativo.' }
+    if ($CheckBox) { throw 'La interfaz todavia muestra la casilla de botonera dedicada.' }
+    $ReadyCondition = New-Object System.Windows.Automation.PropertyCondition(
+        [System.Windows.Automation.AutomationElement]::NameProperty, 'Usar numpad')
+    if ($Root.FindFirst([System.Windows.Automation.TreeScope]::Descendants,$ReadyCondition)) {
+        throw 'La interfaz todavia muestra Usar numpad.'
+    }
     $Message = [DedicatedInputTest]::RegisterWindowMessage('TolkeyenAudioguia.DedicatedKey.v1')
     function Read-Preferences { (Get-Content "$Fixture/app/config/audioguia.json" -Raw | ConvertFrom-Json).preferences }
     function Send-Scan([int]$Scan, [long]$Version=1) {
@@ -67,8 +70,7 @@ try {
     }
     $Initial = Read-Preferences
     Send-Scan 309
-    if ((Read-Preferences).direction -ne $Initial.direction) { throw 'Acepto una orden sin habilitacion.' }
-    [void][DedicatedInputTest]::SendMessage($CheckHandle,0x00F5,[IntPtr]::Zero,[IntPtr]::Zero)
+    if ((Read-Preferences).direction -ne $Initial.direction) { throw 'Acepto una orden sin sesion valida.' }
     Start-Sleep -Milliseconds 200
     if ([DedicatedInputTest]::GetProp($Window,'TolkeyenAudioguia.DedicatedReady.v1').ToInt64() -ne 1) {
         throw 'La app no habilito el protocolo.'
@@ -138,14 +140,13 @@ try {
         Write-Host 'PASS: ausencia, ambiguedad y reconexion automatica simuladas sin reenviar ordenes.'
     }
     [void][DedicatedInputTest]::ShowWindow($Window,9)
-    [void][DedicatedInputTest]::SendMessage($CheckHandle,0x00F5,[IntPtr]::Zero,[IntPtr]::Zero)
-    Start-Sleep -Milliseconds 700
-    if ([DedicatedInputTest]::GetProp($Window,'TolkeyenAudioguia.BridgeSession.v1').ToInt64()) { throw 'No cerro la sesion al desactivar.' }
-    $BeforeDisabled = Get-Content "$Fixture/app/config/audioguia.json" -Raw
-    Send-Scan 309 $Session
-    if ((Get-Content "$Fixture/app/config/audioguia.json" -Raw) -ne $BeforeDisabled) { throw 'Acepto una orden atrasada.' }
-    [void][DedicatedInputTest]::SendMessage($CheckHandle,0x00F5,[IntPtr]::Zero,[IntPtr]::Zero)
-    Wait-State 1
+    $BeforeLocalKey = Get-Content "$Fixture/app/config/audioguia.json" -Raw
+    [void][DedicatedInputTest]::PostMessage($Window,0x0100,[IntPtr]0x6F,[IntPtr]1)
+    Start-Sleep -Milliseconds 250
+    if ((Get-Content "$Fixture/app/config/audioguia.json" -Raw) -ne $BeforeLocalKey) {
+        throw 'El teclado normal ejecuto un atajo de reproduccion.'
+    }
+    # Every launch must start the bridge with no checkbox or manual activation.
     [void]$Process.CloseMainWindow()
     if (!$Process.WaitForExit(5000)) { throw 'No cerro la app para la prueba de persistencia.' }
     $Process = Start-Process "$Fixture/app/TolkeyenAudioguia.exe" -PassThru
@@ -156,7 +157,7 @@ try {
     $BeforeRestart = Get-Content "$Fixture/app/config/audioguia.json" -Raw
     Send-Scan 309 $Session
     if ((Get-Content "$Fixture/app/config/audioguia.json" -Raw) -ne $BeforeRestart) { throw 'Acepto sesion del proceso anterior.' }
-    Write-Host 'PASS: opt-in, sesion, recorrido/modo/volumen en segundo plano, foco, cierre y arranque automatico persistente.'
+    Write-Host 'PASS: interfaz sin controles opcionales, arranque dedicado fijo, teclado normal sin atajos, sesion y controles en segundo plano.'
     Write-Host "Configuracion aislada: $Fixture"
 } finally {
     if ($Process -and !$Process.HasExited) {

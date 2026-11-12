@@ -22,22 +22,14 @@ DedicatedBridge::DedicatedBridge(HWND window) : window_(window) {
     const auto length = GetEnvironmentVariableW(L"AUDIOGUIA_BRIDGE_SETTINGS", override_path, 32768);
     if (length > 0 && length < 32768) settings_ = std::filesystem::path(override_path);
     std::filesystem::create_directories(settings_.parent_path());
-    enabled_ = GetPrivateProfileIntW(L"Settings", L"Enabled", 0, settings_.c_str()) != 0;
+    // Dedicated operation is permanent while this app is open. Legacy
+    // Settings/Enabled values are intentionally ignored.
 }
 
 DedicatedBridge::~DedicatedBridge() { stop(); }
 
-void DedicatedBridge::enable(bool value) {
-    if (!WritePrivateProfileStringW(L"Settings", L"Enabled", value ? L"1" : L"0", settings_.c_str()))
-        throw std::runtime_error("No se pudo guardar la preferencia de botonera dedicada.");
-    enabled_ = value;
-    error_.clear();
-    if (!value) stop();
-    else if (!process_) start();
-}
-
 void DedicatedBridge::start() {
-    if (process_ || !enabled_) return;
+    if (process_) return;
     error_.clear();
     const auto app = std::filesystem::path(wxStandardPaths::Get().GetExecutablePath().ToStdWstring()).parent_path();
     const auto tools = app / L"bridge";
@@ -113,7 +105,6 @@ void DedicatedBridge::stop() {
 }
 
 void DedicatedBridge::tick() {
-    if (!enabled_) return;
     if (!process_) {
         if (error_.empty()) {
             try { start(); }
@@ -139,12 +130,11 @@ void DedicatedBridge::tick() {
 }
 
 bool DedicatedBridge::accepts(ULONG_PTR session) const {
-    return enabled_ && process_ && session_ == session && state_ == 1 &&
+    return process_ && session_ == session && state_ == 1 &&
         WaitForSingleObject(process_, 0) == WAIT_TIMEOUT;
 }
 
 void DedicatedBridge::configure() {
-    if (!enabled_) enable(true);
     if (!process_) { error_.clear(); start(); }
     if (process_) SetPropW(window_, L"TolkeyenAudioguia.BridgeConfigure.v1", reinterpret_cast<HANDLE>(1));
 }

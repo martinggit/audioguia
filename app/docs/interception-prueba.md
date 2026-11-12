@@ -52,24 +52,25 @@ El operador confirmo aislamiento, reposo prolongado, reinicio de Windows y
 reconexion manual con el puente de prueba. La nueva version automatiza su ciclo:
 
 1. Cerrar el monitor y la ventana anterior de prueba de aislamiento.
-2. Abrir Audioguia, marcar **Botonera dedicada** y pulsar **Configurar botonera**.
+2. Abrir Audioguia: la captura dedicada es automatica, sin casilla de activacion. Pulsar **Configurar botonera**.
 3. Seleccionar el receptor Genius validado y pulsar **Guardar y capturar**.
    Solo se listan interfaces de teclado compatibles 248A:8367/MI_01; la interfaz
    de mouse nunca se captura. Si el identificador aparece duplicado, se rechaza
    la seleccion en lugar de escoger arbitrariamente.
 4. Esperar **GENIUS ACTIVO**. Minimizar Audioguia y operar desde otra aplicacion.
-5. Las aperturas posteriores recuerdan la opcion y arrancan el puente oculto.
+5. Cada apertura activa la botonera e inicia el puente oculto, incluso si se desactivo antes.
 
-La preferencia y el identificador se guardan fuera del paquete, por usuario y
+El identificador del receptor se guarda fuera del paquete, por usuario y
 computadora: `%LOCALAPPDATA%/TolkeyenAudioguia/dedicated.ini`. No viajan con los
 audios ni afectan al esquema del JSON existente. **Diagnostico** abre `bridge.log`
 en esa misma carpeta (rota a `.old` al superar 512 KiB).
 
-Desmarcar la casilla libera el Genius y cierra el proceso propio. Cerrar Audioguia
+La interfaz no permite alternar a un modo de teclado normal: no hay casilla ni boton Usar numpad.
+El antiguo campo Enabled del INI ya no determina el estado de inicio. Cerrar Audioguia
 detiene el audio y cierra tambien el puente. Minimizar no interrumpe el control.
 El puente tiene un mutex para impedir capturas simultaneas; cada app supervisa
 solo el proceso que inicio. Si falla o no responde, muestra error y requiere
-reactivar la casilla o usar Configurar botonera para reintentar.
+usar Configurar botonera para reintentar.
 
 Al desconectar aparece **ESPERANDO AL GENIUS**. Cuando vuelve un unico teclado con
 el identificador guardado, se captura automaticamente, sin reproducir ni reanudar
