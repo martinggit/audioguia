@@ -1,4 +1,4 @@
-param([switch]$IncludeAudio)
+param([switch]$IncludeAudio, [switch]$IncludeBridge)
 $ErrorActionPreference = 'Stop'
 $AppRoot = Split-Path $PSScriptRoot -Parent
 $Root = Split-Path $AppRoot -Parent
@@ -34,6 +34,14 @@ foreach ($Language in @('0001-ESP','0002-ENG','0003-PORT')) {
     New-Item -ItemType Directory -Force "$Stage/audio/$Language" | Out-Null
 }
 Copy-Item "$AppRoot/TolkeyenAudioguia.exe" "$Stage/app/"
+if ($IncludeBridge) {
+    if (!(Test-Path "$AppRoot/bridge/Lib/AutoHotInterception.dll")) {
+        throw 'Prepare el puente primero con scripts/prepare-bridge.ps1.'
+    }
+    Copy-Item "$AppRoot/bridge" "$Stage/app/" -Recurse
+    New-Item -ItemType Directory -Force "$Stage/app/scripts" | Out-Null
+    Copy-Item "$AppRoot/scripts/interception-managed.ahk", "$AppRoot/scripts/interception-driver.ps1" "$Stage/app/scripts/"
+}
 Copy-Item "$Root/LEEME.md", "$Root/Iniciar.cmd" "$Stage/"
 Copy-Item "$AppRoot/README.md", "$AppRoot/vendor-versions.json" "$Stage/app/"
 Copy-Item "$AppRoot/docs/*.md" "$Stage/app/docs/"
@@ -60,6 +68,7 @@ $Manifest = [ordered]@{
     built_with = 'w64devkit 2.11.0 / GCC 16.2.0'
     exe_sha256 = $Hash
     audio_included = [bool]$IncludeAudio
+    bridge_included = [bool]$IncludeBridge
     created_utc = [DateTime]::UtcNow.ToString('o')
     compatibility = 'Windows 7 SP1/10 intended, not runtime-validated; Windows 11 tested as described in docs/testing.md'
 }

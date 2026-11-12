@@ -125,7 +125,31 @@ El área de avisos al pie de Configuración aparece únicamente cuando hay un me
 
 ### Ventana de operacion
 
-La aplicación utiliza una única ventana con la botonera, los controles y la información de reproducción. Los atajos del numpad funcionan cuando esta ventana tiene el foco.
+La aplicación utiliza una única ventana con la botonera, los controles y la información de reproducción. Los atajos normales del numpad funcionan cuando esta ventana tiene el foco. La opción **Botonera dedicada** permite usar el Genius en segundo plano mediante el puente Interception integrado.
+
+### Genius dedicado en segundo plano
+
+Con Interception instalado y el runtime preparado, marcá **Botonera dedicada** y
+usá **Configurar botonera** para elegir el receptor Genius la primera vez. La app
+recuerda la selección en el perfil local del equipo e inicia el puente oculto en
+las siguientes aperturas. **GENIUS ACTIVO** confirma la captura. Desmarcar libera
+el teclado; cerrar Audioguía detiene el audio y su puente. Minimizar permite seguir
+operando desde otras aplicaciones. La reconexión del mismo receptor es automática;
+durante la detección puede escribir normalmente hasta recuperar la captura.
+
+Para preparar un paquete completo con audios y puente:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\app\scripts\prepare-bridge.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\app\scripts\build.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\app\scripts\package.ps1 -IncludeAudio -IncludeBridge
+```
+
+En cada equipo de destino hay que instalar el controlador una vez como administrador
+con `app/scripts/interception-driver.ps1` y reiniciar. El resto del runtime viaja en
+el ZIP; no requiere instalar AutoHotkey globalmente. Ver
+[configuración, diagnóstico y pruebas](app/docs/interception-prueba.md), incluidas
+las condiciones de licencia del controlador para su despliegue comercial.
 
 **Para salir de la aplicación, cerrá la ventana principal.** El audio se detiene al cerrar.
 

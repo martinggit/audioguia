@@ -91,6 +91,28 @@ int main() {
             check(translate_key(bindings, blocked).action == KeyboardAction::none);
         }
         check(translate_key(bindings, KeyPress{}).action == KeyboardAction::none);
+        KeyboardBindings dedicated_bindings;
+        const int scans[] = {82, 79, 80, 81, 75, 76, 77, 71, 72, 73};
+        for (int digit = 0; digit <= 9; ++digit) {
+            const auto result = translate_dedicated_scan(dedicated_bindings, scans[digit], Mode::simple);
+            check(result.action == (digit == 0 ? KeyboardAction::stop
+                : digit == 9 ? KeyboardAction::none : KeyboardAction::point));
+            if (digit > 0 && digit < 9) check(result.point == digit);
+        }
+        check(translate_dedicated_scan(dedicated_bindings, 284, Mode::simple).action == KeyboardAction::pause);
+        check(translate_dedicated_scan(dedicated_bindings, 309, Mode::simple).action == KeyboardAction::direction);
+        check(translate_dedicated_scan(dedicated_bindings, 55, Mode::simple).action == KeyboardAction::mode);
+        check(translate_dedicated_scan(dedicated_bindings, 74, Mode::simple).action == KeyboardAction::volume_down);
+        check(translate_dedicated_scan(dedicated_bindings, 78, Mode::simple).action == KeyboardAction::volume_up);
+        check(translate_dedicated_scan(dedicated_bindings, 83, Mode::simple).action == KeyboardAction::language);
+        check(translate_dedicated_scan(dedicated_bindings, 83, Mode::sequential).action == KeyboardAction::none);
+        check(translate_dedicated_scan(dedicated_bindings, 83, Mode::custom).action == KeyboardAction::none);
+        for (int code : {-1, 0, 28, 325, 511, 65535})
+            check(translate_dedicated_scan(dedicated_bindings, code, Mode::simple).action == KeyboardAction::none);
+        dedicated_bindings.point_keys[0] = 9;
+        check(translate_dedicated_scan(dedicated_bindings, 73, Mode::simple).point == 1);
+        dedicated_bindings.enter_pauses = false;
+        check(translate_dedicated_scan(dedicated_bindings, 284, Mode::simple).action == KeyboardAction::none);
         std::cout << "keyboard_tests: " << checks << " checks passed\n";
         return 0;
     } catch (const std::exception& error) {

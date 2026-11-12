@@ -45,6 +45,33 @@ inline KeyboardCommand translate_key(const KeyboardBindings& bindings, const Key
     return {};
 }
 
+// Interception scan codes from the dedicated Genius. Num Lock and modifiers on
+// the other keyboard must not change the meaning of these physical buttons.
+inline KeyboardCommand translate_dedicated_scan(const KeyboardBindings& bindings, int scan, Mode mode) {
+    KeyPress key;
+    key.mode = mode;
+    switch (scan) {
+    case 82: key.digit = 0; break;
+    case 79: key.digit = 1; break;
+    case 80: key.digit = 2; break;
+    case 81: key.digit = 3; break;
+    case 75: key.digit = 4; break;
+    case 76: key.digit = 5; break;
+    case 77: key.digit = 6; break;
+    case 71: key.digit = 7; break;
+    case 72: key.digit = 8; break;
+    case 73: key.digit = 9; break;
+    case 284: key.numpad_enter = true; break;
+    case 309: key.operation = NumpadOperator::divide; break;
+    case 55: key.operation = NumpadOperator::multiply; break;
+    case 74: key.operation = NumpadOperator::subtract; break;
+    case 78: key.operation = NumpadOperator::add; break;
+    case 83: key.numpad_decimal = true; break;
+    default: return {};
+    }
+    return translate_key(bindings, key);
+}
+
 class KeyboardController {
 public:
     KeyboardController(AppController& controller, MainFrame& main)
@@ -52,6 +79,7 @@ public:
     bool handle_native_message(void* message);
     static bool editing_focus();
 private:
+    void execute(const KeyboardCommand& command);
     AppController& controller_;
     MainFrame& main_;
 };

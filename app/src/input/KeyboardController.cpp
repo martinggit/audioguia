@@ -26,7 +26,24 @@ bool KeyboardController::editing_focus() {
 
 bool KeyboardController::handle_native_message(void* message) {
     const auto& native = *static_cast<const MSG*>(message);
+    static const UINT dedicated_message = ::RegisterWindowMessageW(L"TolkeyenAudioguia.DedicatedKey.v1");
+    if (dedicated_message && native.message == dedicated_message &&
+        native.hwnd == reinterpret_cast<HWND>(main_.GetHandle())) {
+        if (main_.accepts_dedicated_session(native.wParam) && native.lParam >= 0 && native.lParam <= 511 &&
+            main_.dedicated_input_enabled() && !main_.input_suspended() && main_.IsEnabled()) {
+            try {
+                execute(translate_dedicated_scan(controller_.config().preferences.keyboard,
+                    static_cast<int>(native.lParam), controller_.config().preferences.mode));
+            } catch (const std::exception& error) {
+                main_.report_input_error(error.what());
+            }
+        }
+        return true;
+    }
     if (native.message != WM_KEYDOWN) return false;
+    // In dedicated mode only the bridge sends playback commands. Ordinary
+    // keyboard input remains available for editing and native navigation.
+    if (main_.dedicated_input_enabled()) return false;
     const auto foreground = ::GetAncestor(::GetForegroundWindow(), GA_ROOT);
     const bool main_active = foreground == reinterpret_cast<HWND>(main_.GetHandle());
     if (!main_active || main_.input_suspended() ||
@@ -58,6 +75,11 @@ bool KeyboardController::handle_native_message(void* message) {
         key.repeat = false;
         return translate_key(controller_.config().preferences.keyboard, key).action != KeyboardAction::none;
     }
+    execute(command);
+    return true;
+}
+
+void KeyboardController::execute(const KeyboardCommand& command) {
     switch (command.action) {
     case KeyboardAction::point: controller_.play(controller_.config().preferences.direction, command.point); break;
     case KeyboardAction::stop: controller_.stop(); break;
@@ -85,7 +107,6 @@ bool KeyboardController::handle_native_message(void* message) {
     }
     case KeyboardAction::none: break;
     }
-    return true;
 }
 
 } // namespace audioguia

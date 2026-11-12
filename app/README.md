@@ -74,6 +74,13 @@ Para incluir los audios propios y el mapa actual, despues de verificarlos:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\app\scripts\package.ps1 -IncludeAudio
 ```
 
+Para incluir también la botonera dedicada, ejecutar primero
+`app/scripts/prepare-bridge.ps1` y empaquetar con `-IncludeAudio -IncludeBridge`.
+El runtime se copia a `app/bridge`, junto con sus licencias e instalador oficial.
+El controlador se instala una vez por PC con permisos de administrador y reinicio;
+la selección del Genius y la preferencia se guardan en el perfil local, fuera del ZIP.
+Consultar `docs/interception-prueba.md` para el procedimiento completo.
+
 Se conservan los originales. No distribuya audios sin los derechos correspondientes. No se aplica compresion ejecutable ni se empaquetan DLL del sistema. El ZIP incluye licencias, manual e identificacion SHA-256 del ejecutable.
 
 ## Windows 7

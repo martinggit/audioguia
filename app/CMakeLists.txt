@@ -40,7 +40,7 @@ add_library(audioguia_audio STATIC src/audio/MiniaudioPlayer.cpp)
 target_include_directories(audioguia_audio PUBLIC src)
 target_link_libraries(audioguia_audio PUBLIC audioguia_core ole32)
 add_executable(TolkeyenAudioguia WIN32
-    src/app/App.cpp src/app/App.rc src/input/KeyboardController.cpp
+    src/app/App.cpp src/app/App.rc src/input/KeyboardController.cpp src/input/DedicatedBridge.cpp
     src/ui/MainFrame.cpp
     src/ui/SequenceEditor.cpp src/ui/PreferencesDialog.cpp)
 target_compile_options(TolkeyenAudioguia PRIVATE -Wall -Wextra -Wpedantic)

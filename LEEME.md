@@ -78,7 +78,18 @@ Los operadores `/`, `*`, `+` y `-` funcionan tambien con Bloq Num apagado; los d
 
 Las repeticiones al mantener una tecla se ignoran. Los atajos se suspenden en el dialogo de configuracion y cuando se edita un selector, secuencia o volumen. La asignacion numerica se puede cambiar en `preferences.keyboard` del JSON con la app cerrada; no se admiten colisiones.
 
-Los atajos funcionan SOLO con foco en esta app. Un numpad comun no se aisla globalmente ni puede controlar esta app en segundo plano sin interferir con otra aplicacion. No se instalaron drivers ni hooks globales.
+Los atajos normales funcionan SOLO con foco en esta app. Para el Genius dedicado
+se dispone de una integracion opcional con Interception: activar **Botonera dedicada**
+inicia el puente oculto para operar en segundo plano sin enviar sus teclas a otras aplicaciones.
+La primera vez, pulsar **Configurar botonera** y seleccionar el Genius. La opcion y
+el receptor se recuerdan en esta computadora; no hace falta abrir PowerShell.
+El estado **GENIUS ACTIVO** confirma la captura. Desconectar/reconectar el receptor
+provoca una busqueda y captura automatica, sin iniciar audios. Durante la deteccion
+puede haber entradas normales del teclado. Desmarcar libera el Genius; cerrar
+Audioguia cierra tambien su puente. **Diagnostico** abre el registro local.
+Requiere el controlador instalado y la identificacion validada del receptor;
+consultar `app/docs/interception-prueba.md`. La app por si sola no instala controladores.
+Cerrar la app termina el audio; minimizarla permite seguir operando con el puente.
 
 ## Errores Y Salida
 

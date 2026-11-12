@@ -30,3 +30,5 @@
 .DS_Store
 Thumbs.db
 desktop.ini
+# Generated optional dedicated-keypad runtime (prepared from official tools).
+/app/bridge/
